@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading & Listening Comprehension</title>
+    <style>
+        /* CSS VARIABLES & RESET */
+        :root {
+            --bg-color: #e0f2fe; /* Light blue background */
+            --card-bg: #ffffff;
+            --text-color: #000000;
+            --primary-dark: #1e3a8a;
+            --correct-color: #16a34a; 
+            --wrong-color: #dc2626; 
+            --border-color: #cbd5e1;
+            --base-font-size: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: var(--base-font-size);
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: font-size 0.3s ease;
+        }
+
+        /* TYPOGRAPHY */
+        h1, h2, h3 {
+            font-weight: 300; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        /* HEADER & NAVIGATION */
+        #top-bar {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            background-color: var(--primary-dark);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #top-bar.distraction-free {
+            transform: translateY(-100%);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            flex-grow: 1;
+        }
+
+        .tab-btn, .control-btn {
+            background-color: transparent;
+            color: white;
+            border: 1px solid white;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        .tab-btn.active, .tab-btn:hover, .control-btn:hover {
+            background-color: white;
+            color: var(--primary-dark);
+            transform: scale(1.05); 
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* ANIMATED GRADIENT BUTTONS */
+        @keyframes gradientShift { 
+            0% {background-position: 0% 50%;} 
+            50% {background-position: 100% 50%;} 
+            100% {background-position: 0% 50%;} 
+        }
+
+        #auto-save-btn, .btn-cancel {
+            background: linear-gradient(45deg, #ef4444, #b91c1c, #ef4444);
+            background-size: 200% 200%;
+            border: none;
+            color: white;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        #auto-save-btn.active, .btn-submit, .generate-btn {
+            background: linear-gradient(45deg, #0ea5e9, #16a34a, #0ea5e9);
+            background-size: 200% 200%;
+            border: none;
+            color: white;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        #auto-save-btn:hover, .btn-submit:hover:not(:disabled), .btn-cancel:hover, .generate-btn:hover {
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .btn-submit:disabled {
+            background: var(--border-color);
+            animation: none;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none;
+        }
+
+        /* AUDIO BAR */
+        #audio-bar {
+            position: fixed;
+            top: 60px;
+            left: 0; width: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 2px solid var(--border-color);
+            padding: 10px;
+            display: none;
+            justify-content: center;
+            z-index: 999;
+            transition: top 0.3s ease;
+        }
+
+        #audio-bar.distraction-free {
+            top: 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        audio {
+            width: 100%;
+            max-width: 600px;
+            height: 40px;
+        }
+
+        /* MAIN CONTENT */
+        main {
+            flex-grow: 1;
+            padding: 120px 15px 70px 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            transition: padding-top 0.3s ease;
+        }
+
+        main.has-audio { padding-top: 160px; }
+        main.distraction-free { padding-top: 20px; }
+        main.distraction-free.has-audio { padding-top: 70px; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* QUESTION CARDS */
+        .question-card {
+            background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,249,255,0.5) 100%);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .question-card:hover {
+            transform: scale(1.01); 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 800px) {
+            .options-grid { grid-template-columns: 1fr; }
+        }
+
+        .option-btn {
+            background-color: #f8fafc;
+            border: 2px solid var(--border-color);
+            padding: 12px 15px;
+            text-align: left;
+            cursor: pointer;
+            font-size: inherit;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            color: var(--text-color);
+            min-height: 60px; 
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: #e2e8f0;
+            border-color: #94a3b8;
+            transform: scale(1.02); 
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .option-btn.correct {
+            background: linear-gradient(45deg, #16a34a, #22c55e);
+            color: white !important;
+            border-color: var(--correct-color) !important;
+        }
+
+        .option-btn.wrong {
+            background: linear-gradient(45deg, #dc2626, #ef4444);
+            color: white !important;
+            border-color: var(--wrong-color) !important;
+        }
+
+        /* FEEDBACK MESSAGE */
+        .feedback-msg {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .feedback-msg.show { display: block; }
+        .feedback-msg.success { background-color: #dcfce7; color: var(--correct-color); border: 1px solid var(--correct-color); }
+        .feedback-msg.error { background-color: #fee2e2; color: var(--wrong-color); border: 1px solid var(--wrong-color); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TROPHY & EMOJI ANIMATION */
+        .emoji-anim {
+            display: inline-block;
+            font-size: 2.5rem; 
+            vertical-align: middle;
+            margin-left: 15px;
+            animation: popIcon 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIcon {
+            0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+            20% { transform: scale(1.5) rotate(15deg); opacity: 1; }
+            40% { transform: scale(1.1) rotate(-10deg); }
+            60% { transform: scale(1.3) rotate(5deg); }
+            80% { transform: scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; } 
+        }
+
+        /* STUDENT PROMPT MODAL */
+        #student-prompt-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(15, 23, 42, 0.95);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .modal-box {
+            background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,249,255,1) 100%);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-box input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2rem;
+            margin: 20px 0;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        #student-name-display {
+            font-size: 1.8rem; 
+            font-weight: bold;
+            min-height: 40px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-submit, .btn-cancel {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        /* FLOATING BUTTON */
+        #distraction-btn {
+            position: fixed;
+            bottom: 40px; right: 20px;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-dark);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transition: transform 0.2s ease, background-color 0.2s;
+        }
+        #distraction-btn:hover {
+            transform: scale(1.1); 
+            background-color: #1e40af;
+        }
+
+        /* GENERATE RANDOM BTN */
+        .generate-btn {
+            padding: 12px 24px;
+            font-size: 1.1rem; font-weight: bold; border-radius: 8px;
+            cursor: pointer; margin: 0 auto 25px auto; display: block;
+            text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+
+        /* ANIMATED FOOTER PROGRESS BAR */
+        @keyframes scrollGradient { 0% {background-position: 0% 0;} 100% {background-position: 200% 0;} }
+        
+        footer {
+            background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a);
+            background-size: 200% 100%;
+            animation: scrollGradient 5s linear infinite;
+            color: white; text-align: center; padding: 10px;
+            position: fixed; bottom: 0; width: 100%;
+            font-size: 0.9rem; font-weight: bold; letter-spacing: 1px;
+            z-index: 1000; transition: transform 0.3s ease;
+        }
+        footer.distraction-free { transform: translateY(100%); }
+
+    </style>
+</head>
+<body>
+
+    <!-- TOP NAVIGATION BAR -->
+    <div id="top-bar">
+        <div class="tabs" id="tabs-container">
+            <!-- Tabs injected dynamically -->
+        </div>
+        <div class="controls-group">
+            <button class="control-btn" onclick="adjustZoom(-2)">A-</button>
+            <button class="control-btn" onclick="adjustZoom(2)">A+</button>
+            <button class="control-btn" onclick="exportCSV()">Export CSV</button>
+            <button id="auto-save-btn" class="control-btn" onclick="toggleAutoSave()">Auto-Save: OFF</button>
+        </div>
+    </div>
+
+    <!-- AUDIO BAR -->
+    <div id="audio-bar">
+        <audio id="global-audio" controls>
+            <source id="audio-source" src="" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content">
+        <!-- Tab contents injected dynamically -->
+    </main>
+
+    <!-- STUDENT PROMPT MODAL -->
+    <div id="student-prompt-modal">
+        <div class="modal-box">
+            <h2 style="color: var(--primary-dark); font-weight:bold;">Student ID Required</h2>
+            <p style="color: #64748b; font-size:0.9rem;">Please enter your Student Number to submit this answer</p>
+            <input type="number" id="student-id-input" placeholder="Enter Student Number" oninput="verifyStudent()" onkeydown="handleEnter(event)">
+            <div id="student-name-display"></div>
+            <div class="modal-actions">
+                <button id="submit-answer-btn" class="btn-submit" onclick="confirmAnswer()" disabled>Submit Answer</button>
+                <button class="btn-cancel" onclick="cancelPrompt()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING DISTRACTION FREE BUTTON -->
+    <button id="distraction-btn" onclick="toggleDistractionFree()" title="Distraction Free Mode">&#x26F6;</button>
+
+    <!-- FOOTER -->
+    <footer id="footer">
+        All rights are reserved to Dr. Mazen Badawy – Doctor of English Teaching & Testing
+    </footer>
+
+    <script>
+        /** ==========================================
+         * DATA STORE
+         * ========================================== */
+        
+        // 234 Student List
+        const rawStudentData = `1	ابراهيم أحمد محمد عبدالعزيز شعنون
+2	ابراهيم اسماعيل ابو اليزيد ابو زيد عثمان
+3	ابراهيم محمد ابراهيم محمد حتحوت
+4	ابوبكر صادق محمد الغمرى عبدالقادر
+5	احمد انور طلبه خليفة عيد
+6	احمد انور محمد بهاءالدين
+7	احمد حمادة ابراهيم امين العونة
+8	احمد حمدي عاطف السيد صلاح
+9	احمد خالد محمد على منصور ابو طالب
+10	احمد سعد محمد حسن سلامه
+11	احمد طه رمضان ابراهيم ابوالنور
+12	احمد طه عبدالعزيز محمد
+13	احمد عبدالغنى أحمد محمد السعيد
+14	احمد عزت محمد حسين فرج
+15	احمد علام مصطفى سعد
+16	احمد عماد عبدالحليم احمدفايد
+17	احمد عيد درويش محمود
+18	احمد ماهر محمد ابو اليزيد احمد
+19	احمد محمد احمد احمد مطاوع
+20	احمد محمد احمد بسيونى
+21	احمد محمد السيد وفا
+22	احمد محمد عبدالسلام ابراهيم خليف
+23	احمد محمد عبدالعزيز عبدالعزيز قنديل
+24	احمد محمد غازي عبدالكريم رزق
+25	احمد محمد فتحى عبدالمجيد زيدان
+26	احمد محمد مصطفى محمد عبدالرازق
+27	احمد وليد احمد عبدالفتاح على ابوالسعد
+28	احمد وليد احمد محمد غازي
+29	احمد ياسر عبدالجليل السيد جاهين
+30	احمد ياسر عبدالقادر على خليفه
+31	ادم اكرم سعد محمد عبدالله
+32	ادهم اسامة احمد محمد الشناوى
+33	ادهم حاتم السيد بكير
+34	اشرف ايهاب مبروك اسماعيل المشد
+35	اشرف عماد اسماعيل عبدالسلام عيد
+36	الاء احمد عبدالقوى عبدالحميد رحاب
+37	الاء احمد محمد سمير سيد
+38	الاء عبدالفتاح برهامي عبدالفتاح مندور
+39	البراء محمد محمد تراب
+40	السيد ياسر السيد ابراهيم خطاب
+41	اياد زكرى عبدالتواب محمد الصيفى
+42	ايمن مبروك محمد عبداللطيف الجندى
+43	ايهاب اسامه خيرى عزيز بركات
+44	جنه محمد مصطفى حواس
+45	حسام دسوقى فرحات فرحات النشال
+46	حسن محمد حسن سعد الحلوانى
+47	حماده حمدان قطب احمد النجار
+48	حنان احمد عبدالمحسن حسن ابوحلاوه
+49	حنين ابراهيم عبدالعاطي محمد سعد
+50	حنين حسين محمد عيسى اليمانى
+51	خالد فتح الله ممدوح جمعة
+52	خالد محمد زكى عبدالمنعم محمد
+53	خالد ياسر سمير ابراهيم الشرقاوي
+54	خلود محمد عجمي إبراهيم
+55	رأفت ابراهيم احمد عبدالمجيد العطفي
+56	رحمه عبدالحميد ابراهيم على غالى
+57	رضا ابراهيم السيد رزق
+58	رغد محمد نصر عبد العزيز عبد النبى
+59	رمضان فرج رمضان سالم عبدالرحمن
+60	زياد محمد ابراهيم محمد الشيهى
+61	زياد محمد حسن على عتيم
+62	زياد محمد عبدالحميد عبدالقوى شعبان
+63	زياد محمد موسى على موسى
+64	سامح عمرو عبدالعليم عبدالحي الفرارجي
+65	سعد احمد سعد حسنين عطيه
+66	سلمى طه محمد لبن
+67	سلوى الشهاوى ربيع كمال
+68	سيف الدين احمد محمد جابر
+69	شادى سامح شعبان عبدالفتاح ابراهيم
+70	شروق محمد السيد محمود عفيفي
+71	شفاء محمد صلاح احمد محمد
+72	شهاب عطية جابر محمد خاطر
+73	صالح سليمان عبدالقادر محمد الجدوى
+74	طارق محمد قطب عبداللطيف براني
+75	طاهر محمد طاهر محمد السيد
+76	عبد الرحمن محمود السيد فهمى السيد
+77	عبدالرحمن انور محمد محمد
+78	عبدالرحمن زياد محروس ابوالنجاه
+79	عبدالرحمن عزت محمد احمد رشدي
+80	عبدالرحمن عزمى متولى محمد فلفل
+81	عبدالرحمن على ابراهيم على نعمت الله
+82	عبدالرحمن مصطفى عبدالرحيم مصطفى ابوالعمايم
+83	عبدالرحمن نبيل محمد المصلحى نصار
+84	عبدالرحمن هاني عبدالرحمن محمد بدوي
+85	عبدالرحمن وصفى شحاته يوسف الشراكى
+86	عبدالله السيد احمد عبدالحميد الشرقاوى
+87	عبدالله خالد منير محمد عبدالمنعم
+88	عبدالله رجب فهمي عبدالحميد ابو طالب
+89	عبدالله زين العابدين يونس محمد خضر
+90	عبدالله فاروق محمد فتح الله
+91	عبدالمنعم محمد سعد ابوسعده
+92	عبدالوهاب محمد فاروق محمد زايد
+93	عصام محمد محمد السيد الشرقاوى
+94	على السيد على احمد شمس الدين
+95	على محمد سعيد محمد يوسف
+96	على محمد على محمد رجب
+97	علي مصطفي موسي ابراهيم الشيخ
+98	عمر عبدالرحمن عبدالعزيز ابو حفيشه
+99	عمر فتحي عبداللطيف محمد القاضى
+100	عمر فريد محمد الشحرى
+101	عمر محمد السيد عمر بسيونى
+102	عمر محمد حمدى عبدالغنى الدماطى
+103	عمر محمد عبدالمجيد عبدالفتاح شامه
+104	عمر محمد فتحي اسماعيل موسي
+105	عمر محمد فصيح عبدالوهاب عطا الله
+106	عمرو صلاح الدين عطية عطا حجازى
+107	عمرو ياسر حلمى محمد عبدالخالق
+108	غصون ايمن عبدالفتاح محمد
+109	فارس ابراهيم سعد سالم رجب
+110	فارس محمد ماهر محمد الصياد
+111	فاروق وليد فاروق محمد عيشه
+112	كريم خالد عفيفي ابراهيم عفيفي
+113	كريم عماد السيد حامد حجازى
+114	كمال مصطفى محمد اسماعيل محمد
+115	مجدى مسعد مجدى زكريا مرعى
+116	محمد ابراهيم عبدالعال صالح
+117	محمد ابراهيم على على ابوسعده
+118	محمد احمد حمزه عبدالحميد فرج
+119	محمد احمد محمد زكريا دبور
+120	محمد احمد مختار احمد افندى
+121	محمد اسماعيل حسن عبدالمحسن يوسف
+122	محمد اشرف محمد محمد شعبان
+123	محمد المرشدى محمد الحسانين ندا
+124	محمد حسن عبدالله عبدالفتاح هنداوى
+125	محمد حسن محمد محمود على
+126	محمد خالد ابواليزيد محمد رمضان
+127	محمد رفاعى حامد الجزار
+128	محمد سامح عبدالمطلب محمد جادالله
+129	محمد سامى محمد ابراهيم مطر
+130	محمد سعد نصرعبداللطيف الخولى
+131	محمد سمير محمد عمارة
+132	محمد طارق محمد داود على سالم
+133	محمد عادل عبدالنور السيد سلمان
+134	محمد عبدالحافظ محمد عبدالحافظ ابراهيم
+135	محمد عبدالحميد عبدالعليم السيد حسين
+136	محمد عبدالحميد فضل الله عبدالحميد مبروك
+137	محمد عبدالرؤف بيومى شعبان القرضاوى
+138	محمد عبدالكريم وهبى ابراهيم صلاح
+139	محمد عصام محمد عوض أحمد
+140	محمد علاء محمد عبدالعال السيد
+141	محمد على عبدالوهاب محمد الشريف
+142	محمد عماد ابراهيم ابراهيم احمد
+143	محمد عوض عبدالرؤف احمد جمعة
+144	محمد غازى سعد غازي
+145	محمد فتحى احمد عبدالجليل ابوعيانه
+146	محمد فتحي فرج الله بشير فرج الله
+147	محمد مبروك محمد عبدالوهاب الشناط
+148	محمد مجدى عبدالحميد طه اسماعيل
+149	محمد محمود منصور محمود ابراهيم
+150	محمد مصطفى احمد زين العابدين
+151	محمد هاني مصطفي سعد السيد
+152	محمد وليد معتمد اسماعيل
+153	محمد يوسف صلاح الدين محمد هيبه
+154	محمد يوسف محمد الطيار
+155	محمود أشرف أحمد بسيونى زبيب
+156	محمود ابراهيم جاب الله عبدالغنى ابراهيم
+157	محمود احمد مرشدى على ابوطاحون
+158	محمود السيد عبدالمقصود فتح الله على
+159	محمود الشحات فهمى حسن ابو قوره
+160	محمود جلال مصطفي ابو المكارم مهنا
+161	محمود حجازى عبد الفتاح حجازى قنديل
+162	محمود خالد محمد علي نجا
+163	محمود على محمود التلمة
+164	محمود محمد محمود محمد زايد
+165	مرسى عطيه السعيد مرسى حميد
+166	مروان محمد محمد البرماوي
+167	مروه ابو المكارم فريج عبدالرازق العو
+168	مريم خالد علي محمد سليم
+169	مريم صبرى على حامد حامد
+170	مريم طارق السعيد محمد مرسى
+171	مريم عادل عبداللطيف أحمد الصعيدي
+172	مريم عاطف علي محمد رمضان
+173	مصطفى احمد محمد عبدالفتاح الجزار
+174	مصطفى ايمن احمد على فتح الباب
+175	مصطفى جمال مرسي يوسف نصار
+176	معاذ ابرهيم احمد حسن حربي
+177	معاذ ايهاب محمد ابو الفتوح علي كساب
+178	ممدوح ياسر ممدوح عبدالفتاح القاضي
+179	منه الله وائل عادل السيد عرابى
+180	منه مجدى معوض السيد السيد
+181	مها حماده حسن مسعود العدل
+182	نادر السيد محمد عبدالسلام جاد
+183	ناديه اسامه عبدالحي علام سلامه
+184	نبيله طارق عبدالستار محمد عكاشه
+185	نديم وئام محيى الدين الموزى
+186	نودى سامى منصور حسن هيكل
+187	نور الهدى محمد حامد محمد الخياط
+188	نور محمد عبدالقادر شعبان كرشة
+189	نيره حماده ربيع حافظ
+190	هادى ياسر محمود أحمد العبد
+191	هدى رضا محمد اسماعيل بركات
+192	هشام اسامه سعد محمد سعد
+193	هشام السعيد محمود يوسف
+194	هشام جمال حافظ محمد عبدالعال
+195	يوسف السيد المتولى العشماوى
+196	يوسف ايمن رمضان احمد ابراهيم
+197	يوسف حمدى السعيد ابواليزيد نصرالدين
+198	يوسف رضا محمد السعيد يوسف
+199	يوسف سعد يوسف بدير ابراهيم
+200	يوسف عصام محمد محمد سلامه
+201	يوسف مؤمن عبدالعزيز عبده البدرى
+202	يوسف متولى متولى متولى الجدع
+203	يوسف مصطفى ابراهيم محمد ابراهيم جمعه
+204	اشرف جمال شعبان السيد
+205	معاذ مسعد عطا محمد ابراهيم ابو الورد
+206	ابراهيم مرسي ابراهيم مرسي قطب
+207	احمد عبدالناصر على طه عكاشة
+208	احمد عصام احمد السيد عطيه
+209	احمد علاء الدين محمد يوسف مصطفى
+210	اسامه محمد مصطفى اسماعيل
+211	اسلام حسام الدين مفتاح عبدالحميدمفتاح
+212	امين احمد مصطفى عبدالحميد الكاشف
+213	رائد طارق عبدالفتاح عبدالنبى حامد
+214	سعد عبدالحميد عبدالواحد عبدالعزيز الديب
+215	عبدالرحمن راضى عبدالرحمن محمد حسين
+216	عبدالرحمن رضا ابراهيم عبدالقادر طه
+217	عبدالرحمن عصام مرسي محفوظ محمد المرسي
+218	عبدالرحمن على حافظ جمعة الحبصاوى
+219	عبدالله محمد صلاح محمد احمد
+220	عبدالله يسرى صلاح عبدالجواد منصور حماده
+221	عبدالوهاب ابراهيم محمد نوار
+222	على الرفاعى عطالله الرفاعى عطاالله
+223	عمر محمد سالم احمد موسي
+224	عمر محمد عبدالمجيد شهاوي عبدالنبي
+225	مازن فارس عطيه علي بريشه
+226	محمد حسام الدين فتحى محمود جوده
+227	محمد حسنين محمد احمد فرغلى
+228	محمد سعيد رجب حسين شطاره
+229	محمد قطب فؤاد فايد مرزوق
+230	محمد هشام ذكى على الغريب
+231	محمود اسامه شوقى عبدالفتاح
+232	محمود المتولي محمد المتولي ابراهيم
+233	مهند وليد جمعه بسيونى ضبيش
+234	مى ناصر محمود على عبده`;
+
+        const studentsDB = {};
+        rawStudentData.split('\n').forEach(line => {
+            const parts = line.split('\t');
+            if(parts.length >= 2) studentsDB[parts[0].trim()] = parts[1].trim();
+        });
+
+        // Quiz Question Database (Updated to 15 Units + Grammar)
+        const rawQuizData = {
+            "Unit 1: Science": [
+                { q: "What is fundamental science?", opts: ["Science that describes basic objects and forces.", "Science applied to solve practical problems.", "Science limited only to the study of biology.", "Science that relies purely on guesswork."], ansText: "Science that describes basic objects and forces." },
+                { q: "Which term is often used as a synonym for pure science?", opts: ["Fundamental science.", "Applied technology.", "Industrial research.", "Engineering methodology."], ansText: "Fundamental science." },
+                { q: "What does pure science depend upon?", opts: ["Deductions from demonstrated truths.", "Immediate practical applications.", "Industrial development.", "Economic benefits."], ansText: "Deductions from demonstrated truths." },
+                { q: "Basic science is the heart of all discoveries, and progress is based on...", opts: ["well controlled experiments.", "untested theories.", "philosophical debates.", "industrial manufacturing."], ansText: "well controlled experiments." },
+                { q: "Why is fundamental science education important for children?", opts: ["It provides them with scientific minds and curiosity.", "It teaches them how to build steam engines.", "It restricts their independent thinking.", "It helps them memorize facts better."], ansText: "It provides them with scientific minds and curiosity." },
+                { q: "What did Watts observe that led to the development of the steam engine?", opts: ["The lid of a boiling kettle jumping up.", "A bird flying in the sky.", "An apple falling from a tree.", "A piece of wood burning in the fire."], ansText: "The lid of a boiling kettle jumping up." },
+                { q: "Provide an antonym for the word 'modern' from Unit One.", opts: ["Ancient.", "Recent.", "Contemporary.", "Current."], ansText: "Ancient." },
+                { q: "What is the primary purpose of applied science?", opts: ["To discover the origins of the universe.", "To solve practical problems using scientific knowledge.", "To study literature and art.", "To satisfy spiritual needs alone."], ansText: "To solve practical problems using scientific knowledge." },
+                { q: "Which field is closely related to applied sciences according to the text?", opts: ["Astrology.", "Engineering.", "Philosophy.", "Music."], ansText: "Engineering." },
+                { q: "In industrial settings, what is the use of applied science usually referred to?", opts: ["Art and Design (A&D).", "Research and Development (R&D).", "Public Relations (PR).", "Human Resources (HR)."], ansText: "Research and Development (R&D)." },
+                { q: "According to the text, what does fundamental science offer to society?", opts: ["A direct path to wealth.", "A comprehensive information base to overcome crises.", "A way to avoid educational reforms.", "A complete replacement for art and music."], ansText: "A comprehensive information base to overcome crises." },
+                { q: "The results of fundamental research have a direct influence on:", opts: ["Only the lives of scientists.", "The life of society as a whole.", "The decline of modern industries.", "The reduction of critical thinking."], ansText: "The life of society as a whole." },
+                { q: "Apart from physical needs, what other human needs does fundamental science satisfy?", opts: ["Financial needs.", "Spiritual needs.", "Political needs.", "Recreational needs."], ansText: "Spiritual needs." },
+                { q: "How does the text describe current education?", opts: ["It is perfectly training the senses.", "It is largely stuffing the brain.", "It is entirely focused on practical skills.", "It encourages excessive independent thinking."], ansText: "It is largely stuffing the brain." },
+                { q: "What is the noun form of the word 'applied'?", opts: ["Appliance.", "Application.", "Apply.", "Applicable."], ansText: "Application." },
+                { q: "What happens when education merely 'stuffs the brain'?", opts: ["Students become spiritual giants.", "It perfectly trains the mind.", "The power of observation and judgment remains limited.", "It directly leads to industrial revolutions."], ansText: "The power of observation and judgment remains limited." },
+                { q: "According to the passage, what type of minds does the country need?", opts: ["Minds that only memorize.", "Minds that avoid science.", "Batches of scientific minds.", "Minds focused solely on politics."], ansText: "Batches of scientific minds." },
+                { q: "At what educational level does the text argue fundamental science should be imparted?", opts: ["University level only.", "Secondary school upwards.", "Primary classes upwards.", "Kindergarten only."], ansText: "Primary classes upwards." },
+                { q: "Who developed the steam engine based on Watts' early observations?", opts: ["Dalton.", "Lavoisier.", "Stevenson.", "Boyle."], ansText: "Stevenson." },
+                { q: "When Watts' mother called him to breakfast, what was his reaction?", opts: ["He immediately joined the party.", "He turned off the fire.", "He was concentrated on the boiling kettle.", "He ran outside to play."], ansText: "He was concentrated on the boiling kettle." },
+                { q: "Which of these is considered an important ingredient behind the early industrial revolution?", opts: ["The discovery of electricity.", "The invention of the telegraph.", "The discovery of the steam engine.", "The creation of quantum mechanics."], ansText: "The discovery of the steam engine." },
+                { q: "Form a verb from the word 'discovery'.", opts: ["Discoverable.", "Discoverer.", "Discover.", "Discovering."], ansText: "Discover." },
+                { q: "What should we instill in children to produce a scientific, social, and spiritual revolution?", opts: ["A desire for wealth.", "A habit of memorization.", "A fear of failure.", "Scientific curiosity and love of truth."], ansText: "Scientific curiosity and love of truth." },
+                { q: "Which phrase describes science studied without regard to practical applications?", opts: ["Applied science.", "Engineering.", "Research and Development.", "Pure science."], ansText: "Pure science." },
+                { q: "The logic of scientific reductionism suggests that all phenomena can be:", opts: ["Ignored by practical science.", "Replaced by spiritual beliefs.", "Proven to be entirely random.", "Derived from basic objects and forces."], ansText: "Derived from basic objects and forces." },
+                { q: "Which spiritual needs cannot be reduced merely to art, music, and nature?", opts: ["The need for shelter.", "The need for social dominance.", "The need for physical rest.", "Knowledge and understanding of the structure of nature."], ansText: "Knowledge and understanding of the structure of nature." },
+                { q: "What did Watts imaginatively catch while observing the kettle?", opts: ["The shape of the lid.", "The color of the water.", "The temperature of the fire.", "The significance of the steam's power."], ansText: "The significance of the steam's power." },
+                { q: "Provide an antonym for the word 'single'.", opts: ["One.", "Unique.", "Sole.", "Multiple."], ansText: "Multiple." },
+                { q: "Form a verb from the word 'education'.", opts: ["Educator.", "Educational.", "Educative.", "Educate."], ansText: "Educate." },
+                { q: "Form a verb from the word 'revolution'.", opts: ["Revolutionary.", "Revolutionist.", "Revolving.", "Revolt."], ansText: "Revolt." }
+            ],
+            "Unit 2: Physics": [
+                { q: "What is physics concerned with?", opts: ["The fundamental laws of the universe and their mathematical formulation.", "The study of living organisms and cells.", "The psychological behavior of humans.", "The chemical reactions of macromolecules."], ansText: "The fundamental laws of the universe and their mathematical formulation." },
+                { q: "What are the elementary constituents of the universe mentioned in the text?", opts: ["Matter, energy, space, and time.", "Protons, neutrons, and electrons.", "Solids, liquids, and gases.", "Plants, animals, and fungi."], ansText: "Matter, energy, space, and time." },
+                { q: "How does physics attempt to describe the natural world?", opts: ["By the application of logic and the scientific method.", "By relying entirely on philosophical debates.", "Through religious interpretations.", "By discarding mathematics."], ansText: "By the application of logic and the scientific method." },
+                { q: "Before the 19th century, what was physics formerly included in?", opts: ["Natural philosophy.", "Alchemy.", "Astrology.", "Mechanical arts."], ansText: "Natural philosophy." },
+                { q: "Which concept is common to all material systems and referred to as a law of physics?", opts: ["The conservation of energy.", "Superconductivity.", "Biological evolution.", "Chemical catalysis."], ansText: "Chemical catalysis." },
+                { q: "Why is physics often called the 'fundamental science'?", opts: ["Other sciences deal with systems that obey the laws of physics.", "It is the easiest science to learn.", "It was the first science ever invented.", "It does not require mathematics."], ansText: "Other sciences deal with systems that obey the laws of physics." },
+                { q: "Form an adjective from the word 'science'.", opts: ["Scientific.", "Scientist.", "Sciences.", "Scientifically."], ansText: "Scientific." },
+                { q: "Is superconductivity considered a universal law of physics?", opts: ["Yes, it applies to all materials.", "No, it stems from laws but only appears in some systems.", "Yes, it is the same as the conservation of energy.", "No, it is a purely chemical phenomenon."], ansText: "No, it stems from laws but only appears in some systems." },
+                { q: "Which area of physics describes the properties of underlying molecules in chemistry?", opts: ["Classical mechanics.", "Quantum mechanics.", "Geology.", "Astrophysics."], ansText: "Quantum mechanics." },
+                { q: "What provides the logical framework in which physical laws can be formulated?", opts: ["Philosophy.", "Mathematics.", "Linguistics.", "History."], ansText: "Mathematics." },
+                { q: "What do we call the research area intermediate between physics and mathematics?", opts: ["Computational chemistry.", "Mathematical physics.", "Applied biology.", "Statistical engineering."], ansText: "Mathematical physics." },
+                { q: "When analytic solutions are not possible, what is frequently utilized in physics?", opts: ["Blind guessing.", "Numerical analysis and simulations.", "Philosophical reasoning.", "Historical texts."], ansText: "Numerical analysis and simulations." },
+                { q: "Scientific computation is an integral part of physics, making which field an active area of research?", opts: ["Social physics.", "Computational physics.", "Medical physics.", "Linguistic physics."], ansText: "Computational physics." },
+                { q: "Electrical engineering is the study of the practical application of:", opts: ["Thermodynamics.", "Electromagnetism.", "Quantum mechanics.", "Fluid dynamics."], ansText: "Electromagnetism." },
+                { q: "Which subfield of mechanics is responsible for the building of bridges?", opts: ["Optics.", "Statics.", "Acoustics.", "Kinematics."], ansText: "Statics." },
+                { q: "Who designs processes and devices such as the transistor?", opts: ["Biologists.", "Geologists.", "Physicists (or practitioners of physics).", "Psychologists."], ansText: "Physicists (or practitioners of physics)." },
+                { q: "Which of the following is NOT a piece of equipment used by experimental physicists mentioned in the text?", opts: ["Particle accelerators.", "Nuclear reactors.", "Microscopes.", "Synchrotrons."], ansText: "Microscopes." },
+                { q: "Which science is described as the science of matter such as atoms and molecules?", opts: ["Biology.", "Geology.", "Chemistry.", "Archaeology."], ansText: "Chemistry." },
+                { q: "Discoveries in basic physics have important ramifications for:", opts: ["Only mathematics.", "Only engineering.", "All of science.", "No other fields."], ansText: "All of science." },
+                { q: "Physical definitions, models, and theories are invariably expressed using:", opts: ["Poetic language.", "Historical references.", "Mathematical relations.", "Musical notes."], ansText: "Mathematical relations." },
+                { q: "Give a synonym for the word 'properties'.", opts: ["Locations.", "Disadvantages.", "Characteristics.", "Exclusions."], ansText: "Characteristics." },
+                { q: "Form an adjective from the word 'interactions'.", opts: ["Interact.", "Interacting.", "Interactive.", "Interactional."], ansText: "Interactive." },
+                { q: "Give a synonym for the phrase 'deal with'.", opts: ["Ignore.", "Abandon.", "Forget.", "Handle / Address."], ansText: "Handle / Address." },
+                { q: "What process includes modeling by theoreticians and detailed observations?", opts: ["The artistic method.", "The historical method.", "The philosophical method.", "The scientific method."], ansText: "The scientific method." },
+                { q: "What was the counterpart of natural philosophy from classical times?", opts: ["Chemistry.", "Biology.", "Alchemy.", "Physics."], ansText: "Physics." },
+                { q: "When did physics separate from philosophy as a positive science?", opts: ["The 17th century.", "The 18th century.", "The 20th century.", "The 19th century."], ansText: "The 19th century." },
+                { q: "Thermodynamics and electromagnetism are areas of:", opts: ["Biology.", "Geology.", "History.", "Physics."], ansText: "Physics." },
+                { q: "What do physicists perform with telescopes and lasers?", opts: ["Surgical operations.", "Musical concerts.", "Magic tricks.", "Experiments."], ansText: "Experiments." },
+                { q: "Form an adjective from the word 'universe'.", opts: ["University.", "Unify.", "Universally.", "Universal."], ansText: "Universal." },
+                { q: "Give a synonym for the word 'precise'.", opts: ["Vague.", "Ambiguous.", "Inaccurate.", "Exact."], ansText: "Exact." }
+            ],
+            "Unit 3: Chemistry": [
+                { q: "What scale does chemistry study matter at?", opts: ["From the atomic to macromolecular scale.", "From the planetary to galactic scale.", "From the cellular to organ scale.", "From the macroscopic to geological scale."], ansText: "From the atomic to macromolecular scale." },
+                { q: "What is chemistry often called because it connects other sciences?", opts: ["The central science.", "The ultimate science.", "The pure science.", "The mathematical science."], ansText: "The central science." },
+                { q: "Who among the following is considered one of the three fathers of modern chemistry?", opts: ["Antoine Lavoisier.", "Isaac Newton.", "Albert Einstein.", "Charles Darwin."], ansText: "Antoine Lavoisier." },
+                { q: "According to modern chemistry, what determines the physical properties of materials?", opts: ["Their structure at the molecular or atomic scale.", "Their color and weight.", "The geographic location they are found in.", "Their philosophical meaning."], ansText: "Their structure at the molecular or atomic scale." },
+                { q: "What does traditional chemistry involve interactions between?", opts: ["Substances in chemical reactions.", "Planets in the solar system.", "Living organisms in an ecosystem.", "Thoughts in the human brain."], ansText: "Substances in chemical reactions." },
+                { q: "In the reaction 2H2 + O2 -> 2H2O, what happens to the number of atoms?", opts: ["They are always equal on the left and right.", "They decrease on the right side.", "They increase on the right side.", "They become unpredictable."], ansText: "They are always equal on the left and right." },
+                { q: "Which of the following is an example of a catalyst mentioned in the text?", opts: ["Sulfuric acid in the electrolysis of water.", "Sugar in a cup of tea.", "Salt in ocean water.", "Wood in a fire."], ansText: "Sulfuric acid in the electrolysis of water." },
+                { q: "What is entropy simply defined as in the text?", opts: ["A measure of energy.", "A measure of disorder.", "A measure of heat.", "A measure of mass."], ansText: "A measure of disorder." },
+                { q: "What do all ordinary matters consist of?", opts: ["Only cells and tissues.", "Atoms or subatomic components.", "Only light and energy.", "Only solid crystals."], ansText: "Atoms or subatomic components." },
+                { q: "Why is steel harder than iron?", opts: ["It contains more energy.", "Its atoms are bound in a more rigid crystalline lattice.", "It has a higher temperature.", "It is a noble metal."], ansText: "Its atoms are bound in a more rigid crystalline lattice." },
+                { q: "Wood undergoes rapid oxidation because it reacts spontaneously with oxygen above a certain:", opts: ["Pressure.", "Temperature.", "Volume.", "Humidity."], ansText: "Temperature." },
+                { q: "What are the three phases of matter at low energy?", opts: ["Plasma, Gas, Energy.", "Solid, Liquid, Gas.", "Crystal, Liquid, Plasma.", "Solid, Vapor, Fluid."], ansText: "Solid, Liquid, Gas." },
+                { q: "Which phase of matter has fixed volume but no fixed shape?", opts: ["Solid.", "Liquid.", "Gas.", "Crystal."], ansText: "Liquid." },
+                { q: "Water is a liquid at room temperature because its molecules are bound by:", opts: ["Covalent bonds.", "Hydrogen bonds.", "Ionic bonds.", "Metallic bonds."], ansText: "Hydrogen bonds." },
+                { q: "What happens when you increase the energy of ice?", opts: ["It sublimates instantly.", "It will melt.", "It turns into wood.", "Its temperature rises immediately without melting."], ansText: "It will melt." },
+                { q: "At what temperature does water become a gas (boil) at 1 atmosphere of pressure?", opts: ["0°C", "50°C", "100°C", "150°C"], ansText: "100°C" },
+                { q: "Hydrogen sulfide (H2S) is a gas at room temperature because:", opts: ["It has strong hydrogen bonds.", "It is a metal.", "It is bound by weaker dipole-dipole interactions.", "It has no electrons."], ansText: "It is bound by weaker dipole-dipole interactions." },
+                { q: "What is the chemistry taught at the high school level often called?", opts: ["Organic chemistry.", "Physical chemistry.", "General chemistry.", "Analytical chemistry."], ansText: "General chemistry." },
+                { q: "Why do chemists regularly use simple, sometimes incomplete concepts from general chemistry?", opts: ["Because they are lazy.", "Because they dislike math.", "Because they are of extraordinary utility and accurately model reactivity.", "Because no other tools exist."], ansText: "Because they are of extraordinary utility and accurately model reactivity." },
+                { q: "Historically, what does the science of chemistry have its roots in?", opts: ["Astrology.", "Philosophy.", "Alchemy.", "Engineering."], ansText: "Alchemy." },
+                { q: "Form a verb from the word 'transformations'.", opts: ["Transformative.", "Transformer.", "Transform.", "Transformed."], ansText: "Transform." },
+                { q: "Form a verb from the word 'analysis'.", opts: ["Analyst.", "Analytical.", "Analyze.", "Analysis."], ansText: "Analyze." },
+                { q: "What do protons, electrons, and neutrons make up?", opts: ["Molecules.", "Crystals.", "Compounds.", "Atoms."], ansText: "Atoms." },
+                { q: "What characterizes gases in terms of shape and volume?", opts: ["Fixed volume, fixed shape.", "Fixed volume, no fixed shape.", "No fixed volume, fixed shape.", "Neither fixed volume nor fixed shape."], ansText: "Neither fixed volume nor fixed shape." },
+                { q: "In a chemical reaction, a substance that is unconsumed but facilitates the reaction is a:", opts: ["Reactant.", "Product.", "Isotope.", "Catalyst."], ansText: "Catalyst." },
+                { q: "What forces must be overcome to change water from a liquid to a gas?", opts: ["Gravitational forces.", "Magnetic forces.", "Nuclear forces.", "Polar attractions (intermolecular)."], ansText: "Polar attractions (intermolecular)." },
+                { q: "Who was mentioned alongside Boyle and Lavoisier as a father of modern chemistry?", opts: ["Mendeleyev.", "Woehler.", "Staudinger.", "Dalton."], ansText: "Dalton." },
+                { q: "What discipline involves applying the principles of physics to materials at the molecular level?", opts: ["Organic chemistry.", "Biochemistry.", "Analytical chemistry.", "Physical chemistry."], ansText: "Physical chemistry." },
+                { q: "Which phase of matter has fixed structures at room temperature that can resist gravity?", opts: ["Plasma.", "Liquid.", "Gas.", "Solid."], ansText: "Solid." },
+                { q: "Form a verb from the word 'interactions'.", opts: ["Interactive.", "Interactional.", "Interactor.", "Interact."], ansText: "Interact." }
+            ],
+            "Unit 4: Engineering": [
+                { q: "Although engineering is an old activity, as an academic discipline it is relatively:", opts: ["Young.", "Ancient.", "Obsolete.", "Unimportant."], ansText: "Young." },
+                { q: "What does engineering endeavor to do?", opts: ["Create, maintain, and apply technology for society's needs.", "Study natural phenomena existing without humans.", "Focus entirely on agricultural breeding.", "Explore biological evolution."], ansText: "Create, maintain, and apply technology for society's needs." },
+                { q: "The telescope and medical x-ray are considered extensions of:", opts: ["Human sight and vision.", "Human memory.", "Human hearing.", "Human walking."], ansText: "Human sight and vision." },
+                { q: "How is the computer described in relation to human capabilities?", opts: ["An extension of the human's brain.", "An extension of walking.", "An extension of hearing.", "An extension of eating."], ansText: "An extension of the human's brain." },
+                { q: "Are dogs, cats, and cattle entirely 'natural' according to the text?", opts: ["No, they have been 'engineered' through selective breeding.", "Yes, they evolved completely without human intervention.", "No, they are mechanical robots.", "Yes, they are wild animals."], ansText: "No, they have been 'engineered' through selective breeding." },
+                { q: "Which act in 1862 officially legitimated engineering in higher education in the US?", opts: ["The Morrill Act (Land Grant College Act).", "The Civil Rights Act.", "The Technology Act.", "The Science Foundation Act."], ansText: "The Morrill Act (Land Grant College Act)." },
+                { q: "Science tries to understand and explain the physical world that would exist even if:", opts: ["There were no humans.", "Technology advanced further.", "Engineering didn't exist.", "Animals could talk."], ansText: "There were no humans." },
+                { q: "What is considered a historic driver of technological advancement?", opts: ["Art and literature.", "Military and defense needs.", "Agricultural decline.", "Philosophical debates."], ansText: "Military and defense needs." },
+                { q: "One of the earliest categorizations of engineering was into:", opts: ["Chemical and Electrical.", "Military and Civilian (Civil).", "Mechanical and Software.", "Biological and Aerospace."], ansText: "Military and Civilian (Civil)." },
+                { q: "How are engineers viewed in modern times due to technology's unintended consequences?", opts: ["With complete trust.", "With mixed feelings.", "With universal admiration.", "With absolute hatred."], ansText: "With mixed feelings." },
+                { q: "According to the text, science is the study of what 'is', and engineering is the creation of:", opts: ["What was.", "What can be.", "What should not be.", "What is impossible."], ansText: "What can be." },
+                { q: "Engineering is described as the creation and development of things that have:", opts: ["Always existed in nature.", "Not existed in the natural world.", "Grown organically on trees.", "Been discovered by biologists."], ansText: "Not existed in the natural world." },
+                { q: "A more illuminating comparison for engineering, in terms of style, might be with:", opts: ["Mathematics.", "The humanities / literature.", "Theoretical physics.", "Geology."], ansText: "The humanities / literature." },
+                { q: "Both literature and engineering involve the study of:", opts: ["Natural phenomena.", "Human created artifacts.", "Chemical reactions.", "Subatomic particles."], ansText: "Human created artifacts." },
+                { q: "In early times, the practice of engineering was that of a trade or craft occurring through:", opts: ["University degrees.", "Apprenticeship.", "Online courses.", "Self-study."], ansText: "Apprenticeship." },
+                { q: "Who signed the Land Grant College Act of 1862?", opts: ["George Washington.", "Thomas Jefferson.", "Abraham Lincoln.", "Theodore Roosevelt."], ansText: "Abraham Lincoln." },
+                { q: "What was the second turning point for engineering, making curricula more scientific?", opts: ["World War I.", "The Industrial Revolution.", "World War II.", "The Information Age."], ansText: "World War II." },
+                { q: "Most engineers prior to WWII had been trained to:", opts: ["Create entirely new mathematical theories.", "Discover new natural laws.", "Develop and apply ideas already in existence.", "Teach humanities."], ansText: "Develop and apply ideas already in existence." },
+                { q: "What is the current (third) phase that human society is going through?", opts: ["The agricultural phase.", "The industrial phase.", "The information phase.", "The hunting phase."], ansText: "The information phase." },
+                { q: "What is replacing slow and exact methods of controlled breeding?", opts: ["Traditional farming.", "Mechanical engineering.", "Genetic engineering, tissue engineering, and nanotechnology.", "Civil engineering."], ansText: "Genetic engineering, tissue engineering, and nanotechnology." },
+                { q: "Which tool is an extension of talking and hearing?", opts: ["The bicycle.", "The microscope.", "The telephone.", "The X-ray."], ansText: "The telephone." },
+                { q: "Which tool is an extension of walking and running?", opts: ["The internet.", "The computer.", "The bicycle.", "The telescope."], ansText: "The bicycle." },
+                { q: "Is the distinction between science and engineering simple?", opts: ["Yes, they are completely unrelated.", "Yes, they study the exact same things.", "No, because science is much older.", "No, because the two are highly interdependent and intertwined."], ansText: "No, because the two are highly interdependent and intertwined." },
+                { q: "Does science create the phenomena that it studies?", opts: ["Yes, it invents them.", "Only in chemistry.", "Only in physics.", "No, it is creative in building theories, not the phenomena."], ansText: "No, it is creative in building theories, not the phenomena." },
+                { q: "Which of the following does the text say does NOT grow on a tree?", opts: ["An apple.", "A leaf.", "A branch.", "A television set."], ansText: "A television set." },
+                { q: "Most scientists feel there is some unique objective truth behind physical phenomena. Is this true for engineering design?", opts: ["Yes, there is only one way to design a car.", "Yes, engineering truth is singular.", "No, engineering is exactly like science.", "No, the designed entity is a creation of a particular designer."], ansText: "No, the designed entity is a creation of a particular designer." },
+                { q: "Why might the boundaries between pure science and engineering be murky?", opts: ["Because scientists do not use math.", "Because engineers do not use science.", "Because humans are not part of nature.", "Because people are natural systems, making their products arguably natural."], ansText: "Because people are natural systems, making their products arguably natural." },
+                { q: "After WWII, university curricula in engineering became much more:", opts: ["Artistic and literary.", "Focused on pure craftsmanship.", "Historical and philosophical.", "Scientific and mathematical."], ansText: "Scientific and mathematical." },
+                { q: "Engineering retains the integrating role of applying physical and life sciences using values derived from:", opts: ["Only natural laws.", "Only military tactics.", "Only abstract math.", "The humanities, letters, arts, and business."], ansText: "The humanities, letters, arts, and business." },
+                { q: "The three phases of civilization (agricultural, industrial, information) were created by:", opts: ["Random chance.", "Natural disasters.", "Political decrees.", "The most powerful applicable technologies of the time."], ansText: "The most powerful applicable technologies of the time." }
+            ],
+            "Unit 5: Engineers": [
+                { q: "What do engineers combine to solve problems?", opts: ["Science and art", "Math and music", "Science and math", "Art and history"], ansText: "Science and math" },
+                { q: "According to the text, who designs almost everything society uses?", opts: ["Scientists", "Engineers", "Technicians", "Artists"], ansText: "Engineers" },
+                { q: "Which field is NOT mentioned as a discipline for engineers?", opts: ["Aerospace", "Biomedical", "Linguistic", "Mechanical"], ansText: "Linguistic" },
+                { q: "What must an engineer consider when finding the best solution?", opts: ["Visual appeal only", "Financial feasibility", "Personal preference", "Legal paperwork only"], ansText: "Financial feasibility" },
+                { q: "What does an aerospace engineer design for Boeing or Airbus?", opts: ["Buildings", "Bridges", "Planes", "Roads"], ansText: "Planes" },
+                { q: "A software engineer might design an application for what device?", opts: ["Washing machine", "Cell phone", "Microwave oven", "Refrigerator"], ansText: "Cell phone" },
+                { q: "How do engineers typically work on large projects?", opts: ["Alone always", "In teams", "Without leaders", "Only remotely"], ansText: "In teams" },
+                { q: "What kind of engineer designs the engine of an automobile?", opts: ["Civil engineer", "Mechanical engineer", "Chemical engineer", "Software engineer"], ansText: "Mechanical engineer" },
+                { q: "What does the phrase “a force to be reckoned with” imply about engineers?", opts: ["They are weak", "They are powerful", "They are lazy", "They are invisible"], ansText: "They are powerful" },
+                { q: "What may happen if a project’s requirements exceed existing technology?", opts: ["It becomes easier", "It becomes impossible", "It becomes cheaper", "It becomes faster"], ansText: "It becomes impossible" },
+                { q: "What do engineers do when a solution is too expensive?", opts: ["Ignore it", "Accept it", "Find another", "Copy it"], ansText: "Find another" },
+                { q: "What type of engineers write software for control systems?", opts: ["Civil engineers", "Chemical engineers", "Electrical engineers", "Biomedical engineers"], ansText: "Electrical engineers" },
+                { q: "Who typically leads a team of engineers?", opts: ["A manager", "A lawyer", "A doctor", "A historian"], ansText: "A manager" },
+                { q: "What do engineers create in every field including medicine?", opts: ["Problems", "Solutions", "Conflicts", "Delays"], ansText: "Solutions" },
+                { q: "What is the role of an entry-level engineer on a team?", opts: ["Lead the whole project", "Work under seniors", "Approve all budgets", "Ignore instructions"], ansText: "Work under seniors" },
+                { q: "What does an engineer do with information from various fields?", opts: ["Ignores it", "Stores it only", "Applies it", "Deletes it"], ansText: "Applies it" },
+                { q: "What does a civil engineer design?", opts: ["Computer chips", "Traffic lights", "Smartphones", "Video games"], ansText: "Traffic lights" },
+                { q: "What is a common limitation for engineering projects?", opts: ["Unlimited time", "No budget", "Time and money", "Infinite resources"], ansText: "Time and money" },
+                { q: "What do electrical engineers design besides software?", opts: ["Electromechanical motors", "Wooden furniture", "Clothing fabrics", "Musical scores"], ansText: "Electromechanical motors" },
+                { q: "What is the main goal of an engineer given a problem?", opts: ["To avoid solving it", "To meet requirements", "To prolong the task", "To increase cost"], ansText: "To meet requirements" }
+            ],
+            "Unit 6: Machinery": [
+                { q: "What does any machine use to perform an activity?", opts: ["Water", "Energy", "Air", "Light"], ansText: "Energy" },
+                { q: "What does a simple machine transform without consuming energy?", opts: ["Color or sound", "Force or magnitude", "Shape or size", "Temperature or pressure"], ansText: "Force or magnitude" },
+                { q: "From which language is the word \"machine\" derived?", opts: ["Greek", "Latin", "Arabic", "French"], ansText: "Greek" },
+                { q: "What did devices historically require to be classified as machines?", opts: ["Moving parts", "Electricity", "Software", "Hydraulics"], ansText: "Moving parts" },
+                { q: "What do engines convert into mechanical energy?", opts: ["Light or sound", "Heat or energy", "Water or ice", "Wood or paper"], ansText: "Heat or energy" },
+                { q: "What causes gas expansion in an internal combustion engine?", opts: ["Cold water", "Exothermic reaction", "Magnetic field", "Sound waves"], ansText: "Exothermic reaction" },
+                { q: "Where are machines using hydraulics especially useful?", opts: ["Schools", "Manufacturing", "Libraries", "Hospitals"], ansText: "Manufacturing" },
+                { q: "What is the mechanical advantage the ratio of?", opts: ["Input to output force", "Output to input force", "Work to energy", "Energy to power"], ansText: "Output to input force" },
+                { q: "How many classical simple machines did Renaissance scientists define?", opts: ["Four", "Six", "Eight", "Ten"], ansText: "Six" },
+                { q: "Which of these is NOT a classical simple machine?", opts: ["Lever", "Pulley", "Battery", "Screw"], ansText: "Battery" },
+                { q: "What are simple machines the building blocks of?", opts: ["Simple tools", "Complicated machines", "Small devices", "Basic structures"], ansText: "Complicated machines" },
+                { q: "Which simple machine depends on torque equilibrium?", opts: ["Inclined plane", "Wedge", "Screw", "Lever"], ansText: "Lever" },
+                { q: "What does a simple machine multiply using mechanical advantage?", opts: ["Speed", "Force", "Heat", "Light"], ansText: "Force" },
+                { q: "What is lost to friction in a simple machine?", opts: ["Work", "Color", "Sound", "Mass"], ansText: "Work" },
+                { q: "Which class of simple machines uses vector resolution of forces?", opts: ["Lever and pulley", "Wedge and screw", "Wheel and axle", "Lever and wheel"], ansText: "Wedge and screw" },
+                { q: "What component does a piston represent in an engine?", opts: ["Fixed part", "Movable part", "Electrical part", "Digital part"], ansText: "Movable part" },
+                { q: "What is an example of a machine without moving parts?", opts: ["Car engine", "Computer", "Bicycle", "Clock"], ansText: "Computer" },
+                { q: "What is the term for leverage in simple machines?", opts: ["Force loss", "Mechanical advantage", "Energy waste", "Speed reduction"], ansText: "Mechanical advantage" },
+                { q: "In a simple machine, work done on load equals work done by what?", opts: ["Gravity", "Applied force", "Friction", "Air resistance"], ansText: "Applied force" },
+                { q: "What is the wedge an example of?", opts: ["Torque equilibrium", "Vector resolution", "Energy storage", "Heat conversion"], ansText: "Vector resolution" }
+            ],
+            "Unit 7: Civil Engineering": [
+                { q: "What is considered the oldest engineering field?", opts: ["Mechanical", "Civil", "Electrical", "Chemical"], ansText: "Civil" },
+                { q: "What does civil engineering include the planning of?", opts: ["Software", "Infrastructure", "Medicine", "Music"], ansText: "Infrastructure" },
+                { q: "What does our infrastructure NOT include according to the text?", opts: ["Roads", "Bridges", "Smartphones", "Airports"], ansText: "Smartphones" },
+                { q: "Who designs the network of pipes for water supply?", opts: ["Mechanical engineers", "Civil engineers", "Electrical engineers", "Chemical engineers"], ansText: "Civil engineers" },
+                { q: "Where does dirty water end up after leaving a house?", opts: ["River directly", "Wastewater plant", "Ocean", "Landfill"], ansText: "Wastewater plant" },
+                { q: "Who designs the foundation of a building?", opts: ["Software engineer", "Civil engineer", "Biomedical engineer", "Petroleum engineer"], ansText: "Civil engineer" },
+                { q: "What do civil engineers work with more than other engineers?", opts: ["General public", "Computer chips", "Chemical formulas", "Biological samples"], ansText: "General public" },
+                { q: "What is required for publicly funded projects?", opts: ["No input", "Public input", "Secret plans", "Military approval"], ansText: "Public input" },
+                { q: "Where do most civil engineers initially work in their careers?", opts: ["Sales", "Design", "Teaching", "Cooking"], ansText: "Design" },
+                { q: "What do civil engineers do as they gain more responsibility?", opts: ["More design", "Manage projects", "Less leadership", "Avoid teams"], ansText: "Manage projects" },
+                { q: "Which branch focuses on physically building a structure?", opts: ["Contracting", "Research", "Teaching", "Sales"], ansText: "Contracting" },
+                { q: "What is a primary concern of civil engineering?", opts: ["Profit only", "Public safety", "Speed only", "Aesthetics only"], ansText: "Public safety" },
+                { q: "What do transportation engineers specialize in building?", opts: ["Computers", "Bridges", "Phones", "TVs"], ansText: "Bridges" },
+                { q: "Who designs sanitary landfills?", opts: ["Chemical engineers", "Civil engineers", "Software engineers", "Biomedical engineers"], ansText: "Civil engineers" },
+                { q: "What must civil engineers keep cool under?", opts: ["Pressure", "Water", "Heat", "Ice"], ansText: "Pressure" },
+                { q: "What do consulting firms produce for building projects?", opts: ["Meals", "Plans", "Clothes", "Music"], ansText: "Plans" },
+                { q: "What does a civil engineer analyze at a project site?", opts: ["Weather only", "Needs and resources", "Color patterns", "Sound levels"], ansText: "Needs and resources" },
+                { q: "What ensures a structure is safe after completion?", opts: ["Ignoring it", "Maintenance", "Demolition", "Abandonment"], ansText: "Maintenance" },
+                { q: "What do civil engineers value besides functionality?", opts: ["Aesthetic appeal", "High cost", "Complexity", "Secrecy"], ansText: "Aesthetic appeal" },
+                { q: "What is behind every major public works project?", opts: ["One architect", "Team of civil engineers", "Single investor", "Government only"], ansText: "Team of civil engineers" }
+            ],
+            "Unit 8: Mechanical Engineering": [
+                { q: "What does mechanical engineering involve the use of?", opts: ["Physics and chemistry", "Art and music", "History and law", "Literature and drama"], ansText: "Physics and chemistry" },
+                { q: "What scientific topic must mechanical engineers know?", opts: ["Mechanics", "Botany", "Zoology", "Theology"], ansText: "Mechanics" },
+                { q: "What is nanotechnology attempting to apply?", opts: ["Large objects", "Microscopic particles", "Heavy metals", "Gaseous elements"], ansText: "Microscopic particles" },
+                { q: "What does mechatronics combine into one field?", opts: ["Art and music", "Mechanical, electrical, and software engineering", "History and law", "Medicine and biology"], ansText: "Mechanical, electrical, and software engineering" },
+                { q: "How many years does a bachelor’s degree in mechanical engineering take?", opts: ["One to two", "Four to five", "Seven to eight", "Ten to twelve"], ansText: "Four to five" },
+                { q: "What do CAE and CAD programs allow engineers to do?", opts: ["Cook food", "Design on computers", "Build houses", "Drive cars"], ansText: "Design on computers" },
+                { q: "What is mechanics the study of?", opts: ["Forces and matter", "Colors and light", "Sounds and music", "Tastes and smells"], ansText: "Forces and matter" },
+                { q: "What does kinematics focus on while ignoring causes?", opts: ["Motion of bodies", "Color of objects", "Temperature changes", "Chemical reactions"], ansText: "Motion of bodies" },
+                { q: "What is drafting specialized in creating?", opts: ["Paintings", "Instructions for parts", "Musical scores", "Dance moves"], ansText: "Instructions for parts" },
+                { q: "What has greatly cut design costs for engineering companies?", opts: ["Hand drawing", "Computer use", "Phone calls", "Mail delivery"], ansText: "Computer use" },
+                { q: "What is a central part of modern mechanical engineering?", opts: ["Cooking", "Learning CAE programs", "Sewing", "Farming"], ansText: "Learning CAE programs" },
+                { q: "What does mechanical engineering include besides mechanics?", opts: ["Kinematics", "Botany", "Zoology", "Theology"], ansText: "Kinematics" },
+                { q: "What do mechanical engineers research to improve their field?", opts: ["New methods and materials", "Old traditions", "Ancient history", "Mythological stories"], ansText: "New methods and materials" },
+                { q: "What is one area of interest for mechanical engineers?", opts: ["Nanotechnology", "Astrology", "Alchemy", "Phrenology"], ansText: "Nanotechnology" },
+                { q: "What do students complete during college in this field?", opts: ["Many engineering projects", "Only written exams", "No practical work", "Art exhibitions"], ansText: "Many engineering projects" },
+                { q: "What does a master’s degree in mechanical engineering allow?", opts: ["Lower jobs", "Advanced study", "No career change", "Only teaching"], ansText: "Advanced study" },
+                { q: "What is statics a part of in mechanical engineering coursework?", opts: ["Arts", "Rigorous work", "Music", "Sports"], ansText: "Rigorous work" },
+                { q: "What does drafting help create for manufacturers?", opts: ["Paintings", "Instructions", "Songs", "Dances"], ansText: "Instructions" },
+                { q: "What does fluid mechanics study?", opts: ["Solids only", "Fluids and forces", "Gases only", "Vacuum only"], ansText: "Fluids and forces" },
+                { q: "What is mechanical engineering among the oldest?", opts: ["Engineering disciplines", "Medical fields", "Art forms", "Musical genres"], ansText: "Engineering disciplines" }
+            ],
+            "Unit 9: Biomedical Engineering": [
+                { q: "What does biomedical engineering apply to problem-solving in?", opts: ["Medicine and biology", "Law and history", "Music and art", "Sports and dance"], ansText: "Medicine and biology" },
+                { q: "What does biomedical engineering bridge the gap between?", opts: ["Art and science", "Engineering, medicine, and biology", "History and future", "Sports and music"], ansText: "Engineering, medicine, and biology" },
+                { q: "What do biomedical engineers use to model the human body?", opts: ["Only paint", "Engineering and math tools", "Only clay", "Musical instruments"], ansText: "Engineering and math tools" },
+                { q: "What is the aim of modeling the human body?", opts: ["Better clinical outcomes", "Better painting skills", "Better singing voices", "Better cooking recipes"], ansText: "Better clinical outcomes" },
+                { q: "What may biomedical engineers design for handicapped people?", opts: ["Computers for work", "Only wheelchairs", "Only glasses", "Only hearing aids"], ansText: "Only wheelchairs" },
+                { q: "What has increased demand for trained professionals?", opts: ["Simpler technology", "Growing complexity of medical technology", "Less technology", "No technology"], ansText: "Growing complexity of medical technology" },
+                { q: "What must trained personnel define in engineering terms?", opts: ["A medical problem", "A musical note", "A dance step", "A painting style"], ansText: "A medical problem" },
+                { q: "What does a biomedical engineer have expertise in?", opts: ["Only art", "Engineering, biological, and medical science", "Only history", "Only music"], ansText: "Engineering, biological, and medical science" },
+                { q: "What is a traditional discipline biomedical engineering is based on?", opts: ["Electrical engineering", "Fine arts", "Literature", "Theology"], ansText: "Electrical engineering" },
+                { q: "What does the scope of biomedical engineering include?", opts: ["Cardiac monitors", "Only books", "Only paintings", "Only songs"], ansText: "Cardiac monitors" },
+                { q: "Where do biomedical engineers find employment?", opts: ["Hospitals and industry", "Only farms", "Only mines", "Only forests"], ansText: "Hospitals and industry" },
+                { q: "What do biomedical engineers design in prostheses?", opts: ["Medical instrumentation", "Musical instruments", "Sports equipment", "Cooking tools"], ansText: "Medical instrumentation" },
+                { q: "What is a growing area of biomedical engineering?", opts: ["Clinical engineering", "Classical music", "Traditional dance", "Ancient history"], ansText: "Clinical engineering" },
+                { q: "What do artificial hearts represent in biomedical engineering?", opts: ["A small scope", "An enormous scope", "No scope", "A limited scope"], ansText: "An enormous scope" },
+                { q: "What do contact lenses relate to in this field?", opts: ["Biomedical engineering", "Mechanical engineering", "Civil engineering", "Chemical engineering"], ansText: "Biomedical engineering" },
+                { q: "What is biomaterials a part of?", opts: ["Biomedical engineering", "Software engineering", "Aerospace engineering", "Petroleum engineering"], ansText: "Biomedical engineering" },
+                { q: "What do rehabilitation engineers focus on?", opts: ["Helping disabled people", "Building roads", "Designing bridges", "Writing software"], ansText: "Helping disabled people" },
+                { q: "What is the role of biomedical engineers in hospitals?", opts: ["Technology management", "Cooking food", "Cleaning floors", "Painting walls"], ansText: "Technology management" },
+                { q: "What does the biomedical industry have active programs in?", opts: ["Research and development", "Only sales", "Only marketing", "Only accounting"], ansText: "Research and development" },
+                { q: "What products require specialist consultants for promotion?", opts: ["Implants and imaging systems", "Only food items", "Only clothing", "Only furniture"], ansText: "Implants and imaging systems" }
+            ],
+            "Unit 10: Chemical Engineering": [
+                { q: "How long has chemical engineering been a distinct discipline?", opts: ["Over 100 years", "Under 10 years", "Exactly 50 years", "Only 5 years"], ansText: "Over 100 years" },
+                { q: "What do chemical engineers produce to eradicate hunger?", opts: ["Fertilizers", "Computers", "Cars", "Clothes"], ansText: "Fertilizers" },
+                { q: "What do chemical engineers produce to power our society?", opts: ["Gasoline", "Water", "Wood", "Stone"], ansText: "Gasoline" },
+                { q: "What do chemical engineers produce that makes cities possible?", opts: ["Cement", "Paper", "Glass", "Rubber"], ansText: "Cement" },
+                { q: "What do chemical engineers produce to clothe us?", opts: ["Fibers", "Metals", "Plastics", "Ceramics"], ansText: "Fibers" },
+                { q: "What do chemical engineers produce for computer chips?", opts: ["Fibers", "Metals", "Plastics", "Ceramics"], ansText: "Ceramics" },
+                { q: "What keeps us healthy according to the text?", opts: ["Pharmaceuticals", "Automobiles", "Furniture", "Toys"], ansText: "Pharmaceuticals" },
+                { q: "What is chemical engineering concerned with changing?", opts: ["Raw materials into products", "Water into wine", "Ice into steam", "Sand into glass"], ansText: "Raw materials into products" },
+                { q: "What does extracting raw materials without harming involve?", opts: ["Environment protection", "Only profit", "Only speed", "Only cost"], ansText: "Environment protection" },
+                { q: "What are currently being developed as new fuels?", opts: ["Environmentally safe types", "Only coal types", "Only wood types", "Only oil types"], ansText: "Environmentally safe types" },
+                { q: "What pharmaceutical products are mentioned?", opts: ["Penicillin and shampoo", "Only aspirin", "Only vitamins", "Only antibiotics"], ansText: "Penicillin and shampoo" },
+                { q: "Where might chemical engineers work in environment protection?", opts: ["Contaminated site cleanup", "Only offices", "Only schools", "Only farms"], ansText: "Contaminated site cleanup" },
+                { q: "What is a major employer of chemical engineers?", opts: ["Mining industry", "Music industry", "Film industry", "Fashion industry"], ansText: "Mining industry" },
+                { q: "What type of engineer specializes in combustion?", opts: ["Combustion engineer", "Software engineer", "Civil engineer", "Biomedical engineer"], ansText: "Combustion engineer" },
+                { q: "What does a petroleum engineer specialize in?", opts: ["Oil and gas", "Water treatment", "Bridge design", "Software coding"], ansText: "Oil and gas" },
+                { q: "What does a smelting engineer work with?", opts: ["Metals extraction", "Computer chips", "Textile fibers", "Medical devices"], ansText: "Metals extraction" },
+                { q: "What does a water treatment engineer focus on?", opts: ["Purifying water", "Building roads", "Writing code", "Designing cars"], ansText: "Purifying water" },
+                { q: "What is an environmental engineer concerned with?", opts: ["Pollution control", "Only profits", "Only speed", "Only cost"], ansText: "Pollution control" },
+                { q: "What do chemical engineers evaluate in operating processes?", opts: ["Efficiency and safety", "Only color", "Only smell", "Only taste"], ansText: "Efficiency and safety" },
+                { q: "What do chemical engineers design and develop?", opts: ["Equipment", "Clothing", "Furniture", "Toys"], ansText: "Equipment" }
+            ],
+            "Unit 11: Electrical Engineering": [
+                { q: "What uses electricity for energy and information transmission?", opts: ["Nearly everything", "Only cars", "Only lights", "Only phones"], ansText: "Nearly everything" },
+                { q: "What does electrical engineering deal with the study of?", opts: ["Electricity and electromagnetism", "Only biology", "Only chemistry", "Only physics"], ansText: "Electricity and electromagnetism" },
+                { q: "When did electrical engineering become an identifiable occupation?", opts: ["Late nineteenth century", "Early eighteenth century", "Mid twentieth century", "Late twenty-first century"], ansText: "Late nineteenth century" },
+                { q: "What does power engineering deal with?", opts: ["Generation and transmission of electricity", "Only water flow", "Only air pressure", "Only sound waves"], ansText: "Generation and transmission of electricity" },
+                { q: "What does a power grid connect together?", opts: ["Generators and users", "Only computers", "Only cars", "Only planes"], ansText: "Generators and users" },
+                { q: "What do electrical engineers design and develop?", opts: ["Electrical equipment", "Only furniture", "Only clothing", "Only food"], ansText: "Electrical equipment" },
+                { q: "The broad field of electrical engineering involves working with?", opts: ["All electronic devices", "Only calculators", "Only radios", "Only TVs"], ansText: "All electronic devices" },
+                { q: "What does a degree in electrical engineering open the door to?", opts: ["Technical careers", "Only farming", "Only fishing", "Only mining"], ansText: "Technical careers" },
+                { q: "Why is the need for electrical engineers always growing?", opts: ["Technology changes and expands", "Technology is static", "Technology is shrinking", "Technology is disappearing"], ansText: "Technology changes and expands" },
+                { q: "What must a successful electrical engineer possess?", opts: ["Broad grasp of engineering", "Only coding skills", "Only sales skills", "Only art skills"], ansText: "Broad grasp of engineering" },
+                { q: "What do electrical engineering degree programs begin with?", opts: ["Fundamentals of engineering", "Advanced art", "Music theory", "Dance history"], ansText: "Fundamentals of engineering" },
+                { q: "How do electrical engineering students learn?", opts: ["Design and lab work", "Only lectures", "Only exams", "Only homework"], ansText: "Design and lab work" },
+                { q: "What does the mix of theory and practice allow students to do?", opts: ["Apply ideas to real life", "Only read books", "Only watch videos", "Only memorize facts"], ansText: "Apply ideas to real life" },
+                { q: "What do students learn to diagnose in this field?", opts: ["Problems", "Only songs", "Only paintings", "Only dances"], ansText: "Problems" },
+                { q: "What is a sub-discipline of electrical engineering?", opts: ["Control systems", "Botany", "Zoology", "Theology"], ansText: "Control systems" },
+                { q: "What does signal processing deal with?", opts: ["Analyzing signals", "Only water", "Only air", "Only soil"], ansText: "Analyzing signals" },
+                { q: "What does telecommunications focus on?", opts: ["Transmitting information", "Only building roads", "Only designing cars", "Only cooking food"], ansText: "Transmitting information" },
+                { q: "What device is mentioned as a power-related device?", opts: ["Transformer", "Bicycle", "Chair", "Table"], ansText: "Transformer" },
+                { q: "Why do users purchase electricity from the grid?", opts: ["To avoid costly generation", "To save time only", "To reduce safety", "To increase pollution"], ansText: "To avoid costly generation" },
+                { q: "What is electronic engineering sometimes considered?", opts: ["Separate discipline", "Part of biology", "Part of art", "Part of music"], ansText: "Separate discipline" }
+            ],
+            "Unit 12: Computer Science": [
+                { q: "What does computer science blend together?", opts: ["Principles, theories, and applications", "Only hardware", "Only software", "Only networks"], ansText: "Principles, theories, and applications" },
+                { q: "What does computer science involve studying?", opts: ["Algorithms", "Only keyboards", "Only mice", "Only screens"], ansText: "Algorithms" },
+                { q: "Do computer science problems always involve computers?", opts: ["No, never", "Yes, always", "Only sometimes", "Only rarely"], ansText: "Only sometimes" },
+                { q: "What is often encoded in bits or bytes?", opts: ["Information", "Only water", "Only air", "Only soil"], ansText: "Information" },
+                { q: "When did computer science begin?", opts: ["1940s", "1820s", "1900s", "2000s"], ansText: "1940s" },
+                { q: "What do computer scientists believe about computers?", opts: ["They are a fundamental part of the world", "They are unimportant", "They will disappear", "They are only toys"], ansText: "They are a fundamental part of the world" },
+                { q: "What do computer scientists compare to decide best solutions?", opts: ["Algorithms", "Only colors", "Only sounds", "Only smells"], ansText: "Algorithms" },
+                { q: "What do computer scientists create to express algorithms?", opts: ["Programming languages", "Only paintings", "Only songs", "Only dances"], ansText: "Programming languages" },
+                { q: "Where can a computer scientist work?", opts: ["Any discipline or industry", "Only banks", "Only schools", "Only farms"], ansText: "Any discipline or industry" },
+                { q: "What is computer science basically about?", opts: ["Solving problems", "Only typing", "Only clicking", "Only drawing"], ansText: "Solving problems" },
+                { q: "What must a computer scientist be good at?", opts: ["Analytical thinking", "Only singing", "Only dancing", "Only painting"], ansText: "Analytical thinking" },
+                { q: "What does computer science necessitate the use of?", opts: ["Logic", "Only luck", "Only chance", "Only magic"], ansText: "Logic" },
+                { q: "What should computer scientists have a lot of?", opts: ["Patience", "Impatience", "Anger", "Fear"], ansText: "Patience" },
+                { q: "What has seen improvements in computer science?", opts: ["Usability and effectiveness", "Only cost", "Only size", "Only weight"], ansText: "Usability and effectiveness" },
+                { q: "When did computers become accepted as normal in everyday life?", opts: ["1990s", "1950s", "1970s", "2010s"], ansText: "1990s" },
+                { q: "What does computing science help predict?", opts: ["Earthquake patterns", "Only weather", "Only tides", "Only eclipses"], ansText: "Only weather" },
+                { q: "What theory can computing science help understand?", opts: ["The Big Bang", "Only gravity", "Only light", "Only sound"], ansText: "The Big Bang" },
+                { q: "What do bits aid in?", opts: ["File transfer between machines", "Only printing", "Only scanning", "Only copying"], ansText: "File transfer between machines" },
+                { q: "What are bytes the most fundamental units of?", opts: ["Information measurement", "Only length", "Only weight", "Only time"], ansText: "Information measurement" },
+                { q: "What do computer scientists study to determine computability?", opts: ["Problems", "Only solutions", "Only answers", "Only results"], ansText: "Problems" }
+            ],
+            "Unit 13: Information Technology": [
+                { q: "What does IT deal with according to the text?", opts: ["Electronic computers and software", "Only paper records", "Only phone calls", "Only letters"], ansText: "Electronic computers and software" },
+                { q: "What do IT professionals perform duties ranging from?", opts: ["Installing apps to designing networks", "Only cleaning", "Only cooking", "Only driving"], ansText: "Installing apps to designing networks" },
+                { q: "What does IT include besides computers?", opts: ["Cell phones and televisions", "Only typewriters", "Only fax machines", "Only landlines"], ansText: "Cell phones and televisions" },
+                { q: "What is the result of combining computer and communications technologies?", opts: ["Information technology", "Only hardware", "Only software", "Only networks"], ansText: "Information technology" },
+                { q: "What does IT help industry reach?", opts: ["New markets", "Only old markets", "Only local areas", "Only farms"], ansText: "New markets" },
+                { q: "What has become more difficult in the Information Age?", opts: ["Defining security", "Using computers", "Making calls", "Sending mail"], ansText: "Defining security" },
+                { q: "In primitive societies, security was limited to protecting?", opts: ["Physical resources", "Only data", "Only codes", "Only passwords"], ansText: "Physical resources" },
+                { q: "What did the Roman Empire use for sensitive messages?", opts: ["Dissolvable parchments", "Only stone tablets", "Only clay pots", "Only metal sheets"], ansText: "Dissolvable parchments" },
+                { q: "What advantage did Allies gain in WWII?", opts: ["Deciphering encryption codes", "Better weapons only", "More soldiers only", "Faster planes only"], ansText: "Deciphering encryption codes" },
+                { q: "What has made sending data across the globe easy?", opts: ["The Internet", "Only letters", "Only couriers", "Only pigeons"], ansText: "The Internet" },
+                { q: "What does IT generally refer to in large organizations?", opts: ["Laptops and servers", "Only pens", "Only paper", "Only desks"], ansText: "Laptops and servers" },
+                { q: "What is an important part of information security?", opts: ["Controlling computer networks", "Only locking doors", "Only using safes", "Only hiring guards"], ansText: "Controlling computer networks" },
+                { q: "What is an intranet?", opts: ["Local computer network", "Global network", "Phone network", "TV network"], ansText: "Local computer network" },
+                { q: "What is confidentiality in IT security?", opts: ["Protecting access to sensitive data", "Sharing all data", "Deleting all data", "Ignoring data"], ansText: "Protecting access to sensitive data" },
+                { q: "What does integrity ensure about information?", opts: ["Accuracy and reliability", "Only speed", "Only color", "Only size"], ansText: "Accuracy and reliability" },
+                { q: "What does availability of data ensure?", opts: ["Readily available to users", "Hidden from all", "Destroyed quickly", "Sold to public"], ansText: "Readily available to users" },
+                { q: "What is a challenge of IT security?", opts: ["Balancing user demands and data protection", "Only buying computers", "Only installing software", "Only updating printers"], ansText: "Balancing user demands and data protection" },
+                { q: "What do routers and switches form?", opts: ["A computer network", "A phone line", "A TV station", "A radio tower"], ansText: "A computer network" },
+                { q: "What is a main objective of IT security?", opts: ["Integrity of data", "Only speed", "Only cost", "Only color"], ansText: "Integrity of data" },
+                { q: "What has grown exponentially with easy data transmission?", opts: ["Challenge of protecting information", "Only cost of computers", "Only size of devices", "Only weight of devices"], ansText: "Challenge of protecting information" }
+            ],
+            "Unit 14: Internet Addiction": [
+                { q: "What is said to be as convenient as the Internet?", opts: ["No other place", "Only libraries", "Only schools", "Only parks"], ansText: "No other place" },
+                { q: "What has the Internet revolutionized?", opts: ["How we communicate, learn, and work", "Only how we eat", "Only how we sleep", "Only how we walk"], ansText: "How we communicate, learn, and work" },
+                { q: "Where have many children developed Internet addiction?", opts: ["Asian countries", "Only Europe", "Only Africa", "Only South America"], ansText: "Asian countries" },
+                { q: "What do parents want to avoid for their children?", opts: ["Internet addiction", "Reading books", "Playing sports", "Eating vegetables"], ansText: "Internet addiction" },
+                { q: "How often are news headlines updated now?", opts: ["By the minute", "Only daily", "Only weekly", "Only monthly"], ansText: "By the minute" },
+                { q: "What is not yet formally recognized as a psychological disorder?", opts: ["Compulsive Internet use", "Reading books", "Playing chess", "Walking outside"], ansText: "Compulsive Internet use" },
+                { q: "What does Internet addiction disorder interfere with?", opts: ["Daily life, work, and relationships", "Only sleep", "Only eating", "Only walking"], ansText: "Daily life, work, and relationships" },
+                { q: "What replaces phone conversations for addicts?", opts: ["Instant messengers", "Face-to-face talks", "Letters", "Carrier pigeons"], ansText: "Instant messengers" },
+                { q: "What replaces physical sports for addicts?", opts: ["Online role-playing games", "Running outside", "Swimming", "Hiking"], ansText: "Online role-playing games" },
+                { q: "What do critics claim about the Internet?", opts: ["It amplifies existing disorders", "It cures all disorders", "It has no effect", "It prevents all disorders"], ansText: "It amplifies existing disorders" },
+                { q: "What is not necessarily a problem?", opts: ["Spending a lot of time online", "Reading many books", "Playing sports daily", "Eating healthy food"], ansText: "Spending a lot of time online" },
+                { q: "When may you have a problem with Internet addiction?", opts: ["Neglecting relationships and work", "Spending five minutes online", "Using email once a week", "Checking weather online"], ansText: "Neglecting relationships and work" },
+                { q: "What did a Taiwan study find about 11-year-olds?", opts: ["11% had Internet obsession", "1% had Internet obsession", "50% had Internet obsession", "0% had Internet obsession"], ansText: "11% had Internet obsession" },
+                { q: "What was a strong predictor of Internet addiction?", opts: ["Depression", "Happiness", "Wealth", "Health"], ansText: "Depression" },
+                { q: "What may children with depression turn to for comfort?", opts: ["Anonymity of the Internet", "Outdoor sports", "Family dinners", "School activities"], ansText: "Anonymity of the Internet" },
+                { q: "What is ADHD according to the text?", opts: ["Attention disorder", "Happiness disorder", "Wealth disorder", "Health disorder"], ansText: "Attention disorder" },
+                { q: "What can cause a child to turn to the Internet?", opts: ["Lack of patience", "Too much patience", "Too much sleep", "Too much food"], ansText: "Lack of patience" },
+                { q: "What was a strong predictor for girls?", opts: ["Social phobia", "Happiness", "Wealth", "Health"], ansText: "Social phobia" },
+                { q: "What can social phobia lead to?", opts: ["Avoiding normal activities", "Enjoying parties", "Loving crowds", "Seeking attention"], ansText: "Avoiding normal activities" },
+                { q: "What is hard to measure due to different parameters?", opts: ["Internet addiction rates", "Reading rates", "Sports rates", "Eating rates"], ansText: "Internet addiction rates" }
+            ],
+            "Unit 15: Computer Viruses": [
+                { q: "What is a computer virus?", opts: ["A small software program", "A hardware device", "A type of monitor", "A kind of keyboard"], ansText: "A small software program" },
+                { q: "How do computer viruses spread most easily?", opts: ["Email attachments", "USB cables", "Power cords", "Screen cleaners"], ansText: "Email attachments" },
+                { q: "What should you never open unless known?", opts: ["Email attachment", "Text file", "Image file", "Sound file"], ansText: "Email attachment" },
+                { q: "What can computer viruses be disguised as?", opts: ["Funny images", "Textbooks", "Encyclopedias", "Dictionaries"], ansText: "Funny images" },
+                { q: "What is a symptom of a computer virus?", opts: ["Computer runs slower", "Computer runs faster", "Screen gets brighter", "Keyboard gets louder"], ansText: "Computer runs slower" },
+                { q: "What does a computer do if it crashes frequently?", opts: ["Restarts often", "Speeds up", "Shuts down permanently", "Plays music"], ansText: "Restarts often" },
+                { q: "What may appear on the desktop unexpectedly?", opts: ["New icons", "New books", "New pens", "New chairs"], ansText: "New icons" },
+                { q: "What may play from speakers unexpectedly?", opts: ["Strange sounds", "Silence", "White noise", "No sound"], ansText: "Strange sounds" },
+                { q: "What may disappear from the computer without reason?", opts: ["A program", "A desk", "A chair", "A table"], ansText: "A program" },
+                { q: "What may use up all free hard disk space?", opts: ["Copies of infected files", "Text files", "Image files", "Sound files"], ansText: "Copies of infected files" },
+                { q: "What may computer viruses install hidden programs like?", opts: ["Pirated software", "Free software", "Open source", "Licensed software"], ansText: "Pirated software" },
+                { q: "What may intruders do due to reduced security?", opts: ["Remotely access computer", "Clean the desk", "Organize files", "Print documents"], ansText: "Remotely access computer" },
+                { q: "What extension might a strange attachment have?", opts: [".exe", ".txt", ".doc", ".ppt"], ansText: ".exe" },
+                { q: "What may happen if Windows does not start?", opts: ["System files missing", "Printer empty", "Monitor off", "Keyboard unplugged"], ansText: "System files missing" },
+                { q: "What may occur even with sufficient RAM?", opts: ["Out-of-memory errors", "No errors", "Faster speed", "Brighter screen"], ansText: "Out-of-memory errors" },
+                { q: "What does Scandisk report with multiple serious errors?", opts: ["Disk problems", "Monitor issues", "Keyboard issues", "Mouse issues"], ansText: "Disk problems" },
+                { q: "What may disappear from the computer?", opts: ["A partition", "A desk", "A chair", "A table"], ansText: "A partition" },
+                { q: "What may be disabled for no reason?", opts: ["Antivirus program", "Word processor", "Web browser", "Music player"], ansText: "Antivirus program" },
+                { q: "What may be impossible to install?", opts: ["Antivirus program", "Text editor", "Image viewer", "Music player"], ansText: "Antivirus program" },
+                { q: "What should you run to remove existing viruses?", opts: ["Microsoft Malicious Software Removal Tool", "Only antivirus scan", "Only system restore", "Only disk cleanup"], ansText: "Microsoft Malicious Software Removal Tool" }
+            ],
+            "Grammar & Usage": [
+                { q: "Which of the following is the correct verb form of the word 'education'?", opts: ["Educate.", "Educator.", "Educational.", "Educatingly."], ansText: "Educate." },
+                { q: "What is the correct antonym for the word 'modern'?", opts: ["Ancient.", "Contemporary.", "Recent.", "Current."], ansText: "Ancient." },
+                { q: "Choose the correct part of speech for the word 'fundamental' in the phrase 'fundamental science'.", opts: ["Adjective.", "Noun.", "Verb.", "Adverb."], ansText: "Adjective." },
+                { q: "Which sentence is punctuated correctly?", opts: ["\"Physics,\" he said, \"is the fundamental science.\"", "\"Physics\" he said, \"is the fundamental science.\"", "\"Physics,\" he said \"is the fundamental science.\"", "Physics, he said, is the fundamental science."], ansText: "\"Physics,\" he said, \"is the fundamental science.\"" },
+                { q: "Form an adjective from the noun 'science'.", opts: ["Scientific.", "Scientist.", "Sciences.", "Scientifically."], ansText: "Scientific." },
+                { q: "What is the correct verb form of 'discovery'?", opts: ["Discoverer.", "Discover.", "Discovering.", "Discoverable."], ansText: "Discover." },
+                { q: "Which of the following is the correct noun form of the word 'applied'?", opts: ["Apply.", "Application.", "Appliance.", "Applicable."], ansText: "Application." },
+                { q: "Choose the correct part of speech for 'rapidly' in the sentence: 'The wood burns rapidly.'", opts: ["Adjective.", "Adverb.", "Verb.", "Noun."], ansText: "Adverb." },
+                { q: "Identify the correctly punctuated sentence:", opts: ["Engineering creates maintains and applies technology.", "Engineering creates, maintains, and applies technology.", "Engineering creates maintains, and applies technology.", "Engineering, creates, maintains, and applies technology."], ansText: "Engineering creates, maintains, and applies technology." },
+                { q: "Give an antonym for the word 'unique'.", opts: ["Rare.", "Common.", "Single.", "Unusual."], ansText: "Common." },
+                { q: "Form a verb from the word 'analysis'.", opts: ["Analyst.", "Analytical.", "Analyze.", "Analysis."], ansText: "Analyze." },
+                { q: "Which of the following is an adjective form of 'universe'?", opts: ["University.", "Unify.", "Universal.", "Universally."], ansText: "Universal." },
+                { q: "Identify the part of speech of the word 'they' in the clause 'they create the knowledge base'.", opts: ["Noun.", "Adjective.", "Pronoun.", "Preposition."], ansText: "Pronoun." },
+                { q: "Which punctuation mark is used to connect two closely related independent clauses?", opts: ["Comma.", "Hyphen.", "Semicolon.", "Apostrophe."], ansText: "Semicolon." },
+                { q: "Give a synonym for the word 'precise'.", opts: ["Vague.", "Ambiguous.", "Exact.", "Inaccurate."], ansText: "Exact." },
+                { q: "Form a verb from the word 'transformations'.", opts: ["Transformer.", "Transformative.", "Transformed.", "Transform."], ansText: "Transform." },
+                { q: "Identify the part of speech for the word 'in' in the phrase 'in industrial settings'.", opts: ["Conjunction.", "Adverb.", "Pronoun.", "Preposition."], ansText: "Preposition." },
+                { q: "What is the correct antonym for the word 'single'?", opts: ["One.", "Unique.", "Sole.", "Multiple."], ansText: "Multiple." },
+                { q: "Which sentence shows the correct use of an apostrophe to indicate possession?", opts: ["The engineers design was flawless.", "The engineers's design was flawless.", "The engineer design's was flawless.", "The engineer's design was flawless."], ansText: "The engineer's design was flawless." },
+                { q: "Form an adjective from the word 'interactions'.", opts: ["Interact.", "Interactor.", "Interactional.", "Interactive."], ansText: "Interactive." }
+            ]
+        };
+
+        /** ==========================================
+         * STATE MANAGEMENT & GLOBAL VARS
+         * ========================================== */
+        let currentStudent = { id: null, name: null };
+        let currentZoom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--base-font-size')) || 20;
+        let fileHandle = null;
+        let autoSaveEnabled = false;
+        let distractionFree = false;
+        let testRecords = []; 
+        let pendingAnswerContext = null; 
+
+        /** ==========================================
+         * STUDENT VERIFICATION LOGIC (MODAL)
+         * ========================================== */
+        function verifyStudent() {
+            const input = document.getElementById('student-id-input').value.trim();
+            const display = document.getElementById('student-name-display');
+            const btn = document.getElementById('submit-answer-btn');
+
+            if (input.length > 0) {
+                if (studentsDB[input]) {
+                    display.innerText = studentsDB[input];
+                    display.style.color = "var(--correct-color)";
+                    btn.disabled = false;
+                    currentStudent = { id: input, name: studentsDB[input] };
+                } else {
+                    display.innerText = "⚠️ Student not found in database.";
+                    display.style.color = "var(--wrong-color)";
+                    btn.disabled = true;
+                    currentStudent = { id: null, name: null };
+                }
+            } else {
+                display.innerText = "";
+                btn.disabled = true;
+                currentStudent = { id: null, name: null };
+            }
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                const btn = document.getElementById('submit-answer-btn');
+                if (!btn.disabled) {
+                    confirmAnswer();
+                }
+            }
+        }
+
+        window.onload = () => {
+            initUI();
+        };
+
+        /** ==========================================
+         * CORE UI & GENERATION LOGIC
+         * ========================================== */
+        function initUI() {
+            const tabsContainer = document.getElementById('tabs-container');
+            const mainContent = document.getElementById('main-content');
+            
+            // Build Category Tabs & Containers dynamically
+            let first = true;
+            for (let category in rawQuizData) {
+                const tabId = category.replace(/[^a-z0-9]/gi, '');
+                
+                // Add Tab Button
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${first ? 'active' : ''}`;
+                btn.innerText = category;
+                btn.onclick = (e) => switchTab(e, tabId, category);
+                tabsContainer.appendChild(btn);
+
+                // Add Content Container
+                const section = document.createElement('div');
+                section.id = tabId;
+                section.className = `tab-content ${first ? 'active' : ''}`;
+                section.innerHTML = `<h2>${category}</h2><div class="quiz-container"></div>`;
+                mainContent.appendChild(section);
+
+                if(first) {
+                    renderQuiz(category, section.querySelector('.quiz-container'));
+                    first = false;
+                }
+            }
+
+            // Build "Mixed Practice" Tab
+            const mixId = "MixedPractice";
+            const mixBtn = document.createElement('button');
+            mixBtn.className = "tab-btn";
+            mixBtn.innerText = "Mixed Practice";
+            mixBtn.onclick = (e) => switchTab(e, mixId, "Mixed Practice");
+            tabsContainer.appendChild(mixBtn);
+
+            const mixSection = document.createElement('div');
+            mixSection.id = mixId;
+            mixSection.className = "tab-content";
+            mixSection.innerHTML = `
+                <h2>Mixed Practice (Randomized)</h2>
+                <button class="generate-btn" onclick="renderMixedPractice()">Generate New Random Set</button>
+                <div class="quiz-container"></div>
+            `;
+            mainContent.appendChild(mixSection);
+        }
+
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#39;');
+        }
+
+        function buildQuestionsHTML(questionsArr, categoryName) {
+            let html = '';
+            questionsArr.forEach((qObj, index) => {
+                let optsMapped = qObj.opts.map(opt => ({ text: opt, isCorrect: opt === qObj.ansText }));
+                optsMapped = shuffleArray(optsMapped);
+
+                const safeCorrectText = escapeHTML(qObj.ansText);
+                const safeQText = escapeHTML(qObj.q);
+                const safeCategory = escapeHTML(categoryName);
+
+                const gridClass = "options-grid grid-2x2"; 
+
+                html += `
+                    <div class="question-card">
+                        <div class="question-text">${index + 1}. ${escapeHTML(qObj.q)}</div>
+                        <div class="${gridClass}">
+                            ${optsMapped.map((opt, i) => {
+                                const safeOptText = escapeHTML(opt.text);
+                                return `<button class="option-btn" 
+                                    data-q="${safeQText}"
+                                    data-opt="${safeOptText}"
+                                    data-correct="${safeCorrectText}"
+                                    data-cat="${safeCategory}"
+                                    onclick="promptForStudent(this)">
+                                    ${String.fromCharCode(65 + i)}) ${safeOptText}
+                                </button>`;
+                            }).join('')}
+                        </div>
+                        <div class="feedback-msg"></div>
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function renderQuiz(category, container) {
+            if (!container) return;
+            const shuffledQs = shuffleArray(rawQuizData[category]);
+            container.innerHTML = buildQuestionsHTML(shuffledQs, category);
+        }
+
+        function renderMixedPractice() {
+            const container = document.querySelector('#MixedPractice .quiz-container');
+            let mixedSelection = [];
+            const unitKeys = Object.keys(rawQuizData);
+            
+            // Draw exactly 3 random unique questions from EACH category equally
+            for (let category of unitKeys) {
+                const shuffled = shuffleArray(rawQuizData[category]);
+                mixedSelection = mixedSelection.concat(shuffled.slice(0, 3));
+            }
+            
+            // Final shuffle of the mixed questions
+            mixedSelection = shuffleArray(mixedSelection);
+            container.innerHTML = buildQuestionsHTML(mixedSelection, "Mixed Practice");
+        }
+
+        function switchTab(event, tabId, categoryName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            const activeSection = document.getElementById(tabId);
+            activeSection.classList.add('active');
+            
+            if(categoryName === "Mixed Practice") {
+                renderMixedPractice();
+            } else {
+                renderQuiz(categoryName, activeSection.querySelector('.quiz-container'));
+            }
+            
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        /** ==========================================
+         * TEST EXECUTION LOGIC & ANSWER CONFIRMATION
+         * ========================================== */
+        function promptForStudent(btn) {
+            const qText = btn.getAttribute('data-q');
+            const selectedText = btn.getAttribute('data-opt');
+            const correctText = btn.getAttribute('data-correct');
+            const category = btn.getAttribute('data-cat');
+            
+            pendingAnswerContext = { btn, qText, selectedText, correctText, category };
+            
+            document.getElementById('student-id-input').value = '';
+            document.getElementById('student-name-display').innerText = '';
+            document.getElementById('submit-answer-btn').disabled = true;
+            currentStudent = { id: null, name: null };
+
+            document.getElementById('student-prompt-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('student-id-input').focus(), 50);
+        }
+
+        function cancelPrompt() {
+            document.getElementById('student-prompt-modal').style.display = 'none';
+            pendingAnswerContext = null; 
+        }
+
+        function confirmAnswer() {
+            if (!pendingAnswerContext) return;
+            const { btn, qText, selectedText, correctText, category } = pendingAnswerContext;
+            
+            const isCorrect = (selectedText === correctText);
+            const nameDisplay = document.getElementById('student-name-display');
+            const submitBtn = document.getElementById('submit-answer-btn');
+
+            const winEmojis = ['🏆', '🌟', '🎉', '🥇', '⭐', '🔥', '👑', '💯', '🚀'];
+            const lossEmojis = ['😥', '😭', '💔', '😞', '😓', '😔', '👎', '🤦', '😩', '🥺'];
+
+            if (isCorrect) {
+                const randomWin = winEmojis[Math.floor(Math.random() * winEmojis.length)];
+                nameDisplay.innerHTML += ` <span class="emoji-anim">${randomWin}</span>`;
+                submitBtn.disabled = true;
+                
+                setTimeout(() => {
+                    document.getElementById('student-prompt-modal').style.display = 'none';
+                    processAnswerUI(true, btn, qText, selectedText, correctText, category);
+                }, 1000);
+            } else {
+                const randomLoss1 = lossEmojis[Math.floor(Math.random() * lossEmojis.length)];
+                let randomLoss2 = lossEmojis[Math.floor(Math.random() * lossEmojis.length)];
+                while(randomLoss1 === randomLoss2) randomLoss2 = lossEmojis[Math.floor(Math.random() * lossEmojis.length)];
+
+                nameDisplay.innerHTML += ` <span id="sad-emoji" class="emoji-anim">${randomLoss1}</span>`;
+                submitBtn.disabled = true;
+
+                setTimeout(() => {
+                    const sadEmoji = document.getElementById('sad-emoji');
+                    if(sadEmoji) sadEmoji.innerText = randomLoss2;
+                }, 500);
+
+                setTimeout(() => {
+                    document.getElementById('student-prompt-modal').style.display = 'none';
+                    processAnswerUI(false, btn, qText, selectedText, correctText, category);
+                }, 1000);
+            }
+        }
+
+        function processAnswerUI(isCorrect, btn, qText, selectedText, correctText, category) {
+            const grid = btn.parentElement;
+            const card = grid.parentElement;
+            const buttons = grid.querySelectorAll('.option-btn');
+            const feedback = card.querySelector('.feedback-msg');
+            
+            buttons.forEach(b => b.disabled = true);
+
+            if (isCorrect) {
+                btn.classList.add('correct');
+                feedback.innerText = "✔ Correct!";
+                feedback.className = "feedback-msg show success";
+                saveRecord(category, qText, selectedText, correctText, "Correct");
+            } else {
+                btn.classList.add('wrong');
+                feedback.innerHTML = `✘ Incorrect. <br><span style="color:#000; font-weight:normal;">The correct answer is:</span> ${escapeHTML(correctText)}`;
+                feedback.className = "feedback-msg show error";
+                
+                buttons.forEach(b => {
+                    if(b.getAttribute('data-opt') === correctText) b.classList.add('correct');
+                });
+            }
+
+            pendingAnswerContext = null;
+        }
+
+        /** ==========================================
+         * DATA EXPORT & AUTO-SAVE
+         * ========================================== */
+        function escapeCSV(str) {
+            return `"${String(str).replace(/"/g, '""')}"`;
+        }
+
+        function generateCSVRow(category, question, selected, correct, status) {
+            const d = new Date().toLocaleString();
+            return [
+                escapeCSV(d),
+                escapeCSV(currentStudent.id),
+                escapeCSV(currentStudent.name),
+                escapeCSV(category),
+                escapeCSV(question),
+                escapeCSV(selected),
+                escapeCSV(correct),
+                escapeCSV(status)
+            ].join(',') + '\n';
+        }
+
+        async function saveRecord(category, question, selected, correct, status) {
+            if (!currentStudent.id) return; 
+            
+            const csvRow = generateCSVRow(category, question, selected, correct, status);
+            testRecords.push(csvRow);
+
+            if (autoSaveEnabled && fileHandle) {
+                try {
+                    const writable = await fileHandle.createWritable({ keepExistingData: true });
+                    const file = await fileHandle.getFile();
+                    await writable.write({ type: 'write', position: file.size, data: csvRow });
+                    await writable.close();
+                } catch (err) {
+                    console.error("Auto-Save failed:", err);
+                    alert("Auto-save failed. Permission might be revoked or file locked.");
+                    disableAutoSaveUI();
+                }
+            }
+        }
+
+        function exportCSV() {
+            if (testRecords.length === 0) {
+                alert("No correct records to export yet.");
+                return;
+            }
+            const headers = "Date,Student Number,Student Name,Category,Question,Selected Answer,Correct Answer,Status\n";
+            const BOM = "\uFEFF"; 
+            const csvContent = BOM + headers + testRecords.join('');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Results_Batch_${new Date().getTime()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function toggleAutoSave() {
+            const btn = document.getElementById('auto-save-btn');
+            
+            if (autoSaveEnabled) {
+                disableAutoSaveUI();
+                return;
+            }
+
+            if (!window.showSaveFilePicker) {
+                alert("Your browser does not support the File System Access API. Auto-save is unavailable. Please use the 'Export CSV' button instead.");
+                return;
+            }
+
+            try {
+                fileHandle = await window.showSaveFilePicker({
+                    suggestedName: `LiveResults_Batch.csv`,
+                    types: [{
+                        description: 'CSV Files',
+                        accept: { 'text/csv': ['.csv'] },
+                    }],
+                });
+                
+                const file = await fileHandle.getFile();
+                if (file.size === 0) {
+                    const writable = await fileHandle.createWritable();
+                    const BOM = "\uFEFF";
+                    const headers = "Date,Student Number,Student Name,Category,Question,Selected Answer,Correct Answer,Status\n";
+                    await writable.write(BOM + headers);
+                    await writable.close();
+                }
+
+                autoSaveEnabled = true;
+                btn.innerText = "Auto-Save: ON";
+                btn.classList.add('active');
+            } catch (err) {
+                console.warn("User cancelled or API failed.", err);
+            }
+        }
+
+        function disableAutoSaveUI() {
+            autoSaveEnabled = false;
+            fileHandle = null;
+            const btn = document.getElementById('auto-save-btn');
+            btn.innerText = "Auto-Save: OFF";
+            btn.classList.remove('active');
+        }
+
+        /** ==========================================
+         * UX CONTROLS (Zoom & Distraction Free)
+         * ========================================== */
+        function adjustZoom(amount) {
+            currentZoom += amount;
+            if (currentZoom < 16) currentZoom = 16;
+            if (currentZoom > 30) currentZoom = 30;
+            document.body.style.fontSize = currentZoom + 'px';
+        }
+
+        function toggleDistractionFree() {
+            distractionFree = !distractionFree;
+            const topBar = document.getElementById('top-bar');
+            const footer = document.getElementById('footer');
+            const main = document.getElementById('main-content');
+            const audioBar = document.getElementById('audio-bar');
+
+            if (distractionFree) {
+                topBar.classList.add('distraction-free');
+                footer.classList.add('distraction-free');
+                main.classList.add('distraction-free');
+                audioBar.classList.add('distraction-free');
+            } else {
+                topBar.classList.remove('distraction-free');
+                footer.classList.remove('distraction-free');
+                main.classList.remove('distraction-free');
+                audioBar.classList.remove('distraction-free');
+            }
+        }
+
+        function loadListeningTrack(src) {
+            const aBar = document.getElementById('audio-bar');
+            const aSrc = document.getElementById('audio-source');
+            const audioObj = document.getElementById('global-audio');
+            
+            if(src) {
+                aSrc.src = src;
+                audioObj.load();
+                aBar.style.display = 'flex';
+                document.getElementById('main-content').classList.add('has-audio');
+            } else {
+                aBar.style.display = 'none';
+                document.getElementById('main-content').classList.remove('has-audio');
+            }
+        }
+
+    </script>
+</body>
+</html>
